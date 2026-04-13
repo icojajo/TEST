@@ -17,7 +17,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchClients();
-    const interval = setInterval(fetchClients, 3000);
+    const interval = setInterval(fetchClients, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -276,15 +276,19 @@ export default function AdminPage() {
         if (!scClient) return null;
         
         const toggleScreen = async (id: string, currentlyCapturing: boolean) => {
-            await fetch('/api/admin', {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id,
-                    message: currentlyCapturing ? "SCREEN:STOP" : "SCREEN:START"
-                })
-            });
-            fetchClients();
+            try {
+              await fetch('/api/admin', {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                      id,
+                      message: currentlyCapturing ? "SCREEN:STOP" : "SCREEN:START"
+                  })
+              });
+              setClients(clients.map(c => c.id === id ? { ...c, isScreenActive: !currentlyCapturing } : c));
+            } catch (e) {
+              console.error(e);
+            }
         };
 
         return (
