@@ -206,9 +206,19 @@ export default function AdminPage() {
                 <div style={{ flex: 1, backgroundColor: "black", border: "1px solid #ccc", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {camClient.isCameraActive ? (
                     camClient.cameraData ? (
-                      <img src={`data:image/jpeg;base64,${camClient.cameraData}`} alt="Video Stream" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <img src={`data:image/jpeg;base64,${camClient.cameraData}`} alt="Video Stream" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                        <div style={{ position: "absolute", bottom: 5, left: 5, fontSize: "10px", color: "#00ff00", background: "rgba(0,0,0,0.5)", padding: "2px" }}>
+                          Data size: {Math.round(camClient.cameraData.length / 1024)} KB
+                        </div>
+                      </div>
                     ) : (
-                      <span style={{ color: "white" }}>Oczekiwanie na klatki...</span>
+                      <div style={{ textAlign: "center" }}>
+                        <span style={{ color: "white" }}>Oczekiwanie na klatki...</span>
+                        <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "10px" }}>
+                          Status kamery: {camClient.isCameraActive ? "AKTYWNA (Wysłano START)" : "NIEAKTYWNA"}
+                        </div>
+                      </div>
                     )
                   ) : (
                     <span style={{ color: "gray" }}>Kamera wyłączona</span>

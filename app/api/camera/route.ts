@@ -4,6 +4,7 @@ import { clients } from '@/lib/store';
 export async function POST(req: Request) {
   try {
     const { id, frame } = await req.json();
+    console.log(`[CAMERA] Received frame from ID: ${id}, Frame size: ${frame ? frame.length : 0} bytes`);
     const client = clients.get(id);
     
     if (client) {

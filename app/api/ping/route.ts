@@ -5,9 +5,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const id = body.id || body.deviceId || "Nieznana Maszyna";
-    
     // Odczytywanie IP
     const ip = req.headers.get("x-forwarded-for") || "Nieznane IP";
+    console.log(`[PING] Received from ID: ${id}, IP: ${ip}`);
 
     let client = clients.get(id);
     if (!client) {
