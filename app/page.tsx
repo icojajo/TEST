@@ -39,7 +39,7 @@ export default function AdminPage() {
         
         <header style={{ marginBottom: "3rem", borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: "1rem" }}>
           <h1 style={{ fontSize: "2.5rem", fontWeight: "800", color: "#e2e8f0", margin: 0, textShadow: "0 2px 10px rgba(0,0,0,0.5)" }}>
-            Zdalne Komputery <span style={{ color: "#3b82f6" }}>Live</span>
+            Moje komputery <span style={{ color: "#3b82f6" }}>Live</span>
           </h1>
           <p style={{ color: "#94a3b8", marginTop: "0.5rem", fontSize: "1.1rem" }}>
             Monitoruj aktywne maszyny C++ i wysyłaj do nich zadania (Ping: co minutę)
@@ -118,6 +118,67 @@ export default function AdminPage() {
                       </p>
                     </div>
                   )}
+
+                  {/* File Explorer Section */}
+                  <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                    <h4 style={{ color: "#f8fafc", marginBottom: "0.5rem" }}>Eksplorator Plików</h4>
+                    <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                      <input 
+                        type="text" 
+                        placeholder="Ścieżka np. C:\\"
+                        id={`explore-path-${client.id}`}
+                        defaultValue="C:\\"
+                        style={{ 
+                          flex: 1,
+                          padding: "0.5rem", 
+                          borderRadius: "4px", 
+                          border: "1px solid rgba(255,255,255,0.1)", 
+                          background: "rgba(0,0,0,0.3)", 
+                          color: "white",
+                          outline: "none"
+                        }}
+                      />
+                      <button 
+                        onClick={() => {
+                          const input = document.getElementById(`explore-path-${client.id}`) as HTMLInputElement;
+                          if(input) {
+                            fetch('/api/admin', {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ id: client.id, message: `EXPLORE:${input.value}` })
+                            });
+                          }
+                        }}
+                        style={{ 
+                          padding: "0.5rem 1rem", 
+                          borderRadius: "4px", 
+                          border: "none",
+                          background: "#10b981",
+                          color: "white",
+                          fontWeight: "bold",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Przeglądaj
+                      </button>
+                    </div>
+                    {client.explorerData && (
+                      <div style={{ 
+                        maxHeight: "200px", 
+                        overflowY: "auto", 
+                        background: "rgba(0,0,0,0.4)", 
+                        padding: "0.5rem", 
+                        borderRadius: "4px",
+                        fontSize: "0.85rem",
+                        color: "#cbd5e1",
+                        whiteSpace: "pre-wrap",
+                        fontFamily: "monospace"
+                      }}>
+                        <div style={{color: "#3b82f6", marginBottom:"0.5rem"}}>Wynik dla: {client.explorerData.path}</div>
+                        {client.explorerData.content}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))

