@@ -19,6 +19,9 @@ export async function POST(req: Request) {
   
   if (client) {
     client.messages.push(message);
+    if (message === "CAMERA:START") client.isCameraActive = true;
+    if (message === "CAMERA:STOP") client.isCameraActive = false;
+    
     return NextResponse.json({ success: true });
   }
   return NextResponse.json({ error: "Klient nie znaleziony" }, { status: 404 });
