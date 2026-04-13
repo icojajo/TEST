@@ -10,6 +10,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api/explorer') || 
     pathname.startsWith('/api/download') || 
     pathname.startsWith('/api/camera') || 
+    pathname.startsWith('/api/screen') ||
     pathname.startsWith('/api/auth') || 
     pathname.startsWith('/login') ||
     pathname.startsWith('/_next') ||
