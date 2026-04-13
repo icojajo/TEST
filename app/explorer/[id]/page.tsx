@@ -11,6 +11,8 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(false);
   const [errorLine, setErrorLine] = useState("");
 
+  const [lastTimestamp, setLastTimestamp] = useState(0);
+
   const fetchExplorerData = async () => {
     try {
       const res = await fetch('/api/admin');
@@ -18,7 +20,8 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
       const client = data.clients?.find((c: any) => c.id === params.id);
       if (client) {
         setClientInfo(client);
-        if (client.explorerData) {
+        if (client.explorerData && client.explorerData.timestamp !== lastTimestamp) {
+            setLastTimestamp(client.explorerData.timestamp);
             const normalizedPath = client.explorerData.path.replace(/\\+/g, '\\');
             setPathInput(normalizedPath);
             try {
