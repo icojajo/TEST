@@ -1,7 +1,7 @@
 // lib/store.ts
 // Hack aby globalny stan przetrwał przeładowania w trakcie dewelopmentu
 const globalForStore = global as unknown as {
-  clients: Map<string, { id: string, ip: string, lastSeen: number, messages: string[], explorerData: any }>
+  clients: Map<string, { id: string, ip: string, lastSeen: number, messages: string[], explorerData: any, downloadData: any }>
 };
 
 export const clients = globalForStore.clients || new Map();

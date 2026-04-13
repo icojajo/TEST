@@ -63,6 +63,51 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
     });
   };
 
+  const downloadFile = async (name: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent clicking row
+    let current = pathInput;
+    if (!current.endsWith('\\')) current += '\\';
+    const fullPath = current + name;
+    
+    setLoading(true);
+    await fetch('/api/admin', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: params.id, message: `DOWNLOAD:${fullPath}` }) });
+    
+    const pollInterval = setInterval(async () => {
+        try {
+            const res = await fetch(`/api/download?id=${params.id}`);
+            const data = await res.json();
+            if (data.data?.path === fullPath) {
+                clearInterval(pollInterval);
+                setLoading(false);
+                if (data.data.b64 === "ERROR") { alert("Błąd pobierania pliku! (Brak dostępu lub plik w użyciu)"); return; }
+                
+                const a = document.createElement('a');
+                a.href = `data:application/octet-stream;base64,${data.data.b64}`;
+                a.download = name;
+                a.click();
+            }
+        } catch(e) {}
+    }, 2000);
+  };
+
+  const uploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+        const b64 = (reader.result as string).split(',')[1];
+        let current = pathInput;
+        if (!current.endsWith('\\')) current += '\\';
+        const fullPath = current + file.name;
+        
+        setLoading(true);
+        await fetch('/api/admin', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: params.id, message: `UPLOAD:${fullPath}:${b64}` }) });
+        
+        setTimeout(() => sendExploreCommand(pathInput), 2500);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const goUp = () => {
     let current = pathInput;
     if (current.endsWith('\\') && current.length > 3) {
@@ -138,7 +183,7 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
         </div>
         
         {/* Toolbar */}
-        <div style={{ backgroundColor: "#b4d2f0", padding: "8px 10px", display: "flex", alignItems: "center" }}>
+        <div style={{ backgroundColor: "#b4d2f0", padding: "8px 10px", display: "flex", alignItems: "center", gap: "10px" }}>
             <button 
                 onClick={() => sendExploreCommand(pathInput)}
                 style={{
@@ -146,8 +191,17 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
                     fontWeight: "bold", fontSize: "14px", color: "#282828", display: "flex", alignItems: "center", gap: "5px"
                 }}
             >
-                🔄 Odśwież {loading && <span style={{ fontSize: "12px", color: "#555" }}>(Ładowanie...)</span>}
+                🔄 Odśwież
             </button>
+            <div style={{ width: "1px", height: "16px", backgroundColor: "#82aadc" }}></div>
+            <label style={{
+                background: "transparent", border: "none", cursor: "pointer", 
+                fontWeight: "bold", fontSize: "14px", color: "#282828", display: "flex", alignItems: "center", gap: "5px"
+            }}>
+                📤 Wgraj plik
+                <input type="file" onChange={uploadFile} style={{ display: "none" }} />
+            </label>
+            {loading && <span style={{ fontSize: "12px", color: "#555", marginLeft: "10px" }}>(Ładowanie/Synchronizacja...)</span>}
         </div>
 
         {/* File Grid */}
@@ -163,7 +217,8 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
                         <tr>
                             <th style={{ padding: "8px 10px", width: "40px", borderRight: "1px solid #fff" }}></th>
                             <th style={{ padding: "8px 10px", fontSize: "13px", fontWeight: "bold", color: "#333", borderRight: "1px solid #fff" }}>Ścieżka</th>
-                            <th style={{ padding: "8px 10px", fontSize: "13px", fontWeight: "bold", color: "#333" }}>Rozmiar / Info</th>
+                            <th style={{ padding: "8px 10px", fontSize: "13px", fontWeight: "bold", color: "#333", borderRight: "1px solid #fff" }}>Rozmiar / Info</th>
+                            <th style={{ padding: "8px 10px", fontSize: "13px", width: "80px" }}></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -193,6 +248,18 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
                                 <td style={{ padding: "8px 10px", fontSize: "13px", color: "#000000", fontWeight: "500" }}>{f.name}</td>
                                 <td style={{ padding: "8px 10px", fontSize: "13px", color: "#555" }}>
                                     {f.type === 'dir' ? '<DIR>' : formatBytes(f.size)}
+                                </td>
+                                <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                                    {f.type === 'file' && (
+                                        <button 
+                                            onClick={(e) => downloadFile(f.name, e)}
+                                            style={{
+                                                background: "#3b82f6", color: "white", border: "none", 
+                                                borderRadius: "3px", padding: "4px 8px", cursor: "pointer", fontSize: "11px"
+                                            }}>
+                                            Pobierz
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
