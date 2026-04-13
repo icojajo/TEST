@@ -209,7 +209,7 @@ export default function AdminPage() {
                       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
                         <img src={`data:image/jpeg;base64,${camClient.cameraData}`} alt="Video Stream" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                         <div style={{ position: "absolute", bottom: 5, left: 5, fontSize: "10px", color: "#00ff00", background: "rgba(0,0,0,0.5)", padding: "2px" }}>
-                          Data size: {Math.round(camClient.cameraData.length / 1024)} KB
+                          Data size: {Math.round(camClient.cameraData.length / 1024)} KB | Updated: {new Date().toLocaleTimeString()}
                         </div>
                       </div>
                     ) : (

@@ -9,6 +9,7 @@ export async function POST(req: Request) {
     
     if (client) {
       client.cameraData = frame; // Update the latest camera frame
+      console.log(`[CAMERA] Frame updated for ID: ${id}. New size: ${frame ? frame.length : 0} bytes. Time: ${new Date().toLocaleTimeString()}`);
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: "Klient nie znaleziony" }, { status: 404 });
