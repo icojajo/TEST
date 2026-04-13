@@ -108,6 +108,42 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
     reader.readAsDataURL(file);
   };
 
+  const createFolder = async () => {
+    const name = prompt("Podaj nazwę nowego folderu:");
+    if (!name) return;
+    let current = pathInput;
+    if (!current.endsWith('\\')) current += '\\';
+    const fullPath = current + name;
+    
+    setLoading(true);
+    await fetch('/api/admin', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: params.id, message: `MKDIR:${fullPath}` }) });
+    setTimeout(() => sendExploreCommand(pathInput), 1000);
+  };
+
+  const deleteItem = async (name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Czy na pewno usunąć ${name}?`)) return;
+    let current = pathInput;
+    if (!current.endsWith('\\')) current += '\\';
+    const fullPath = current + name;
+    
+    setLoading(true);
+    await fetch('/api/admin', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: params.id, message: `DELETE:${fullPath}` }) });
+    setTimeout(() => sendExploreCommand(pathInput), 1000);
+  };
+
+  const setWallpaper = async (name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    let current = pathInput;
+    if (!current.endsWith('\\')) current += '\\';
+    const fullPath = current + name;
+    
+    setLoading(true);
+    await fetch('/api/admin', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: params.id, message: `WALLPAPER:${fullPath}` }) });
+    alert("Wysłano żądanie zmiany tapety.");
+    setLoading(false);
+  };
+
   const goUp = () => {
     let current = pathInput;
     if (current.endsWith('\\') && current.length > 3) {
@@ -201,6 +237,16 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
                 📤 Wgraj plik
                 <input type="file" onChange={uploadFile} style={{ display: "none" }} />
             </label>
+            <div style={{ width: "1px", height: "16px", backgroundColor: "#82aadc" }}></div>
+            <button 
+                onClick={createFolder}
+                style={{
+                    background: "transparent", border: "none", cursor: "pointer", 
+                    fontWeight: "bold", fontSize: "14px", color: "#282828", display: "flex", alignItems: "center", gap: "5px"
+                }}
+            >
+                📁 Nowy Folder
+            </button>
             {loading && <span style={{ fontSize: "12px", color: "#555", marginLeft: "10px" }}>(Ładowanie/Synchronizacja...)</span>}
         </div>
 
@@ -249,17 +295,39 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
                                 <td style={{ padding: "8px 10px", fontSize: "13px", color: "#555" }}>
                                     {f.type === 'dir' ? '<DIR>' : formatBytes(f.size)}
                                 </td>
-                                <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                                <td style={{ padding: "8px 10px", textAlign: "right", display: "flex", gap: "5px", justifyContent: "flex-end" }}>
                                     {f.type === 'file' && (
-                                        <button 
-                                            onClick={(e) => downloadFile(f.name, e)}
-                                            style={{
-                                                background: "#3b82f6", color: "white", border: "none", 
-                                                borderRadius: "3px", padding: "4px 8px", cursor: "pointer", fontSize: "11px"
-                                            }}>
-                                            Pobierz
-                                        </button>
+                                        <>
+                                            <button 
+                                                onClick={(e) => setWallpaper(f.name, e)}
+                                                style={{
+                                                    background: "#10b981", color: "white", border: "none", 
+                                                    borderRadius: "3px", padding: "4px 8px", cursor: "pointer", fontSize: "11px"
+                                                }}
+                                                title="Ustaw jako tapetę pulpitu"
+                                            >
+                                                🖼️ Tapeta
+                                            </button>
+                                            <button 
+                                                onClick={(e) => downloadFile(f.name, e)}
+                                                style={{
+                                                    background: "#3b82f6", color: "white", border: "none", 
+                                                    borderRadius: "3px", padding: "4px 8px", cursor: "pointer", fontSize: "11px"
+                                                }}>
+                                                Pobierz
+                                            </button>
+                                        </>
                                     )}
+                                    <button 
+                                        onClick={(e) => deleteItem(f.name, e)}
+                                        style={{
+                                            background: "#ef4444", color: "white", border: "none", 
+                                            borderRadius: "3px", padding: "4px 8px", cursor: "pointer", fontSize: "11px"
+                                        }}
+                                        title="Usuń trwale"
+                                    >
+                                        🗑️
+                                    </button>
                                 </td>
                             </tr>
                         ))}
