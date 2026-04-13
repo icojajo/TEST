@@ -28,15 +28,15 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
                         setFiles([]);
                     } else {
                         setErrorLine("");
-                        setFiles(parsed.sort((a, b) => {
+                        setFiles(parsed.sort((a: any, b: any) => {
                             if (a.type === 'dir' && b.type === 'file') return -1;
                             if (a.type === 'file' && b.type === 'dir') return 1;
                             return a.name.localeCompare(b.name);
                         }));
                     }
                 }
-            } catch(e) {
-                // Not valid JSON yet
+            } catch(e: any) {
+                setErrorLine("Błąd parsowania JSON: " + e.message + "\nSurowe dane: " + client.explorerData.content.substring(0, 200));
             }
             setLoading(false);
         }
@@ -58,6 +58,11 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
       body: JSON.stringify({ id: params.id, message: `EXPLORE:${path}` })
     });
   };
+
+  useEffect(() => {
+    // Send the initial command on mount to fetch C:\
+    sendExploreCommand(pathInput);
+  }, []);
 
   // Format bytes
   const formatBytes = (bytes: number) => {
