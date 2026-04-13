@@ -122,62 +122,28 @@ export default function AdminPage() {
                   {/* File Explorer Section */}
                   <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
                     <h4 style={{ color: "#f8fafc", marginBottom: "0.5rem" }}>Eksplorator Plików</h4>
-                    <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                      <input 
-                        type="text" 
-                        placeholder="Ścieżka np. C:\\"
-                        id={`explore-path-${client.id}`}
-                        defaultValue="C:\\"
+                    <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginBottom: "1rem" }}>
+                        Otwórz menedżera plików dla tego urządzenia aby przeglądać zawartość dysku, podobnie jak w systemie Windows.
+                    </p>
+                    <button 
+                        onClick={() => window.location.href = `/explorer/${client.id}`}
                         style={{ 
-                          flex: 1,
-                          padding: "0.5rem", 
-                          borderRadius: "4px", 
-                          border: "1px solid rgba(255,255,255,0.1)", 
-                          background: "rgba(0,0,0,0.3)", 
-                          color: "white",
-                          outline: "none"
-                        }}
-                      />
-                      <button 
-                        onClick={() => {
-                          const input = document.getElementById(`explore-path-${client.id}`) as HTMLInputElement;
-                          if(input) {
-                            fetch('/api/admin', {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ id: client.id, message: `EXPLORE:${input.value}` })
-                            });
-                          }
-                        }}
-                        style={{ 
-                          padding: "0.5rem 1rem", 
+                          width: "100%",
+                          padding: "0.8rem 1rem", 
                           borderRadius: "4px", 
                           border: "none",
                           background: "#10b981",
                           color: "white",
                           fontWeight: "bold",
-                          cursor: "pointer"
+                          cursor: "pointer",
+                          boxShadow: "0 4px 15px rgba(16, 185, 129, 0.4)",
+                          transition: "background 0.2s"
                         }}
-                      >
-                        Przeglądaj
-                      </button>
-                    </div>
-                    {client.explorerData && (
-                      <div style={{ 
-                        maxHeight: "200px", 
-                        overflowY: "auto", 
-                        background: "rgba(0,0,0,0.4)", 
-                        padding: "0.5rem", 
-                        borderRadius: "4px",
-                        fontSize: "0.85rem",
-                        color: "#cbd5e1",
-                        whiteSpace: "pre-wrap",
-                        fontFamily: "monospace"
-                      }}>
-                        <div style={{color: "#3b82f6", marginBottom:"0.5rem"}}>Wynik dla: {client.explorerData.path}</div>
-                        {client.explorerData.content}
-                      </div>
-                    )}
+                        onMouseOver={(e) => e.currentTarget.style.background = "#059669"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "#10b981"}
+                    >
+                        📂 Otwórz Menedżer Plików
+                    </button>
                   </div>
                 </div>
               </div>
