@@ -19,7 +19,8 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
       if (client) {
         setClientInfo(client);
         if (client.explorerData) {
-            setPathInput(client.explorerData.path);
+            const normalizedPath = client.explorerData.path.replace(/\\+/g, '\\');
+            setPathInput(normalizedPath);
             try {
                 const parsed = JSON.parse(client.explorerData.content);
                 if (Array.isArray(parsed)) {
@@ -186,7 +187,7 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
                                 <td style={{ padding: "8px 10px", textAlign: "center", fontSize: "18px" }}>
                                     {f.type === 'dir' ? '📁' : '📄'}
                                 </td>
-                                <td style={{ padding: "8px 10px", fontSize: "13px" }}>{f.name}</td>
+                                <td style={{ padding: "8px 10px", fontSize: "13px", color: "#000000", fontWeight: "500" }}>{f.name}</td>
                                 <td style={{ padding: "8px 10px", fontSize: "13px", color: "#555" }}>
                                     {f.type === 'dir' ? '<DIR>' : formatBytes(f.size)}
                                 </td>
