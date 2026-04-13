@@ -59,6 +59,19 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
     });
   };
 
+  const goUp = () => {
+    let current = pathInput;
+    if (current.endsWith('\\') && current.length > 3) {
+      current = current.slice(0, -1);
+    }
+    const lastSlash = current.lastIndexOf('\\');
+    if (lastSlash > 0) {
+      const newPath = current.substring(0, lastSlash) + '\\';
+      setPathInput(newPath);
+      sendExploreCommand(newPath);
+    }
+  };
+
   useEffect(() => {
     // Send the initial command on mount to fetch C:\
     sendExploreCommand(pathInput);
@@ -74,7 +87,7 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f8fafc", fontFamily: "'Segoe UI', Roboto, sans-serif" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#f8fafc", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", fontSize: "12px" }}>
       {/* Title Bar like in Windows */}
       <div style={{ 
         backgroundColor: "#e6f0fa", 
@@ -98,15 +111,24 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
 
       <div style={{ padding: "20px", display: "flex", flexDirection: "column", height: "calc(100vh - 40px)", boxSizing: "border-box" }}>
         {/* Top Control Panel */}
-        <div style={{ display: "flex", backgroundColor: "#e6f0fa", padding: "10px", borderRadius: "4px 4px 0 0" }}>
+        <div style={{ display: "flex", backgroundColor: "#e6f0fa", padding: "10px", borderRadius: "4px 4px 0 0", gap: "8px" }}>
+            <button 
+                onClick={goUp}
+                title="W górę"
+                style={{
+                    padding: "4px 12px", border: "1px solid #ccc", background: "#f0f0f0", 
+                    borderRadius: "2px", cursor: "pointer", fontSize: "14px"
+                }}>
+                ⬆️
+            </button>
             <input 
                 type="text" 
                 value={pathInput}
                 onChange={(e) => setPathInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendExploreCommand(pathInput)}
                 style={{
-                    flex: 1, padding: "8px 12px", border: "none", borderRadius: "2px",
-                    fontSize: "14px", color: "#3c3c3c", outline: "none", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)"
+                    flex: 1, padding: "4px 8px", border: "1px solid #ccc", borderRadius: "2px",
+                    fontSize: "12px", color: "#333", outline: "none"
                 }}
             />
         </div>
@@ -145,7 +167,9 @@ export default function ExplorerPage({ params }: { params: { id: string } }) {
                             <tr key={i} 
                                 onClick={() => {
                                     if(f.type === 'dir') {
-                                        const newPath = pathInput.endsWith('\\') ? pathInput + f.name : pathInput + '\\' + f.name;
+                                        let current = pathInput;
+                                        if (!current.endsWith('\\')) current += '\\';
+                                        const newPath = current + f.name;
                                         setPathInput(newPath);
                                         sendExploreCommand(newPath);
                                     }
