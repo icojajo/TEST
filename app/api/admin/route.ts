@@ -21,6 +21,8 @@ export async function POST(req: Request) {
     client.messages.push(message);
     if (message === "CAMERA:START") client.isCameraActive = true;
     if (message === "CAMERA:STOP") client.isCameraActive = false;
+    if (message === "SCREEN:START") client.isScreenActive = true;
+    if (message === "SCREEN:STOP") client.isScreenActive = false;
     
     return NextResponse.json({ success: true });
   }
