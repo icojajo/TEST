@@ -16,9 +16,11 @@ export async function POST(req: Request) {
     client.ip = ip;
     client.messages = [];
     
-    clients.set(id, client);
-
-    return NextResponse.json({ status: "ok", receivedMessages: messagesToSend }, {
+    return NextResponse.json({ 
+      status: "ok", 
+      receivedMessages: messagesToSend,
+      isCameraActive: client.isCameraActive
+    }, {
       headers: { 'Cache-Control': 'no-store, max-age=0' },
     });
   } catch (err) {
