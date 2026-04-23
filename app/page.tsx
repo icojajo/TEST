@@ -77,6 +77,7 @@ const LiveStream = ({ clientId, type }: { clientId: string, type: 'screen' | 'ca
 };
 
 export default function AdminPage() {
+  const [user, setUser] = useState<{username: string, role: string} | null>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [msgInput, setMsgInput] = useState("");
@@ -87,6 +88,26 @@ export default function AdminPage() {
   const [ips, setIps] = useState<string[]>([]);
   const [newIp, setNewIp] = useState("");
   const [savingIps, setSavingIps] = useState(false);
+
+  // User Manager State
+  const [showUserManager, setShowUserManager] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [newUsername, setNewUsername] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [creatingUser, setCreatingUser] = useState(false);
+
+  // Check auth and role
+  useEffect(() => {
+    fetch('/api/auth')
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          setUser({ username: data.username, role: data.role });
+        } else {
+          window.location.href = '/login';
+        }
+      });
+  }, []);
 
   // Poll all clients for the dashboard grid
   useEffect(() => {
@@ -114,6 +135,17 @@ export default function AdminPage() {
         });
     }
   }, [showIpEditor]);
+
+  // Fetch Users for manager
+  useEffect(() => {
+    if (showUserManager) {
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => {
+          setUsers(data.users || []);
+        });
+    }
+  }, [showUserManager]);
 
   const validateIp = (ip: string) => {
     const regex = /^(\d{1,3}\.){3}\d{1,3}:\d+$/;
@@ -152,6 +184,41 @@ export default function AdminPage() {
     }
   };
 
+  const addUser = async () => {
+    if (!newUsername || !newUserPassword) return;
+    setCreatingUser(true);
+    try {
+      const res = await fetch('/api/users', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: newUsername, password: newUserPassword })
+      });
+      if (res.ok) {
+        setNewUsername("");
+        setNewUserPassword("");
+        // Refresh list
+        const data = await (await fetch('/api/users')).json();
+        setUsers(data.users || []);
+      } else {
+        const d = await res.json();
+        alert(d.error || "Błąd dodawania");
+      }
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
+  const removeUser = async (username: string) => {
+    if (!confirm(`Usunąć konto ${username}?`)) return;
+    await fetch('/api/users', {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username })
+    });
+    const data = await (await fetch('/api/users')).json();
+    setUsers(data.users || []);
+  };
+
   const sendMessage = async (id: string) => {
     if (!msgInput) return;
     await fetch('/api/admin', {
@@ -178,6 +245,13 @@ export default function AdminPage() {
       }
       return c;
     }));
+  };
+
+  const handleLogout = async () => {
+    const res = await fetch('/api/auth', { method: 'DELETE' });
+    if (res.ok) {
+      window.location.href = '/login';
+    }
   };
 
   const selectedClient = clients.find(c => c.id === selectedClientId);
@@ -380,35 +454,34 @@ export default function AdminPage() {
           50% { opacity: 0.5; }
           100% { opacity: 1; }
         }
-        .ip-editor-overlay {
+        .modal-overlay {
           position: fixed; top: 0; left: 0; width: 100%; height: 100%;
           background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px);
           z-index: 1000; display: flex; align-items: center; justify-content: center;
           padding: 2rem;
         }
-        .ip-editor-content {
+        .modal-content {
           background: #1e293b; border: 1px solid rgba(255,255,255,0.1);
           border-radius: 24px; width: 100%; max-width: 500px; padding: 2rem;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
           display: flex; flex-direction: column; max-height: 90vh;
         }
-        .ip-list {
+        .scroll-list {
           flex: 1; overflow-y: auto; margin-bottom: 1.5rem;
           background: #0f172a; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
           padding: 0.5rem;
         }
-        .ip-item {
+        .list-item {
           display: flex; justify-content: space-between; align-items: center;
           padding: 0.8rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);
-          color: #38bdf8; font-family: monospace; font-weight: 600;
+          font-weight: 600;
         }
-        .ip-item:last-child { border-bottom: none; }
+        .list-item:last-child { border-bottom: none; }
         .remove-btn {
           color: #ef4444; cursor: pointer; padding: 5px; border-radius: 6px;
           transition: 0.2s;
         }
         .remove-btn:hover { background: rgba(239, 68, 68, 0.1); }
-        .add-form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
       `}</style>
 
       {!selectedClientId ? (
@@ -416,25 +489,35 @@ export default function AdminPage() {
           <header className="header">
             <div>
               <h1 className="title">Control Center</h1>
-              <p style={{ color: "#64748b", marginTop: "0.5rem" }}>Wybierz jednostkę do zarządzania</p>
+              <p style={{ color: "#64748b", marginTop: "0.5rem" }}>
+                Witaj, <span style={{ color: "#f8fafc", fontWeight: "700" }}>{user?.username}</span> 
+                {user?.role === 'admin' && <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", background: "rgba(168, 85, 247, 0.2)", color: "#a855f7", padding: "2px 6px", borderRadius: "4px" }}>ADMIN</span>}
+              </p>
             </div>
-            <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: "0.8rem", alignItems: "center" }}>
+              {user?.role === 'admin' && (
+                <>
+                  <button 
+                    onClick={() => setShowUserManager(true)}
+                    style={{ background: "rgba(168, 85, 247, 0.1)", color: "#a855f7", border: "1px solid rgba(168, 85, 247, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
+                  >
+                    👥 Konta
+                  </button>
+                  <button 
+                    onClick={() => setShowIpEditor(true)}
+                    style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
+                  >
+                    🌐 IP
+                  </button>
+                </>
+              )}
               <button 
-                onClick={() => setShowIpEditor(true)}
-                style={{ 
-                  background: "rgba(56, 189, 248, 0.1)", 
-                  color: "#38bdf8", 
-                  border: "1px solid rgba(56, 189, 248, 0.2)",
-                  padding: "0.5rem 1rem", 
-                  borderRadius: "100px", 
-                  fontSize: "0.9rem", 
-                  fontWeight: "600",
-                  cursor: "pointer"
-                }}
+                onClick={handleLogout}
+                style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
               >
-                🌐 Zarządzaj IP
+                🚪 Wyloguj
               </button>
-              <div style={{ background: "rgba(34, 197, 94, 0.1)", color: "#22c55e", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.9rem", fontWeight: "600" }}>
+              <div style={{ background: "rgba(34, 197, 94, 0.1)", color: "#22c55e", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600" }}>
                 {clients.length} Aktywnych
               </div>
             </div>
@@ -544,47 +627,73 @@ export default function AdminPage() {
       )}
 
       {showIpEditor && (
-        <div className="ip-editor-overlay">
-          <div className="ip-editor-content">
+        <div className="modal-overlay">
+          <div className="modal-content">
             <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem", fontWeight: "800" }}>Manager Adresów IP</h2>
-            <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.8rem" }}>
-               Format: <code style={{ color: "#38bdf8" }}>xxx.xxx.xxx.xxx:port</code>. Dane zapisywane są wyłącznie w chmurze (Vercel KV / Edge Config).
-            </p>
+            <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.8rem" }}>Format: <code>xxx.xxx.xxx.xxx:port</code></p>
             
-            <div className="add-form">
-               <input 
-                 className="input" 
-                 style={{ marginBottom: 0 }} 
-                 placeholder="Wpisz nowy adres..." 
-                 value={newIp}
-                 onChange={(e) => setNewIp(e.target.value)}
-                 onKeyDown={(e) => e.key === 'Enter' && addIp()}
-               />
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+               <input className="input" style={{ marginBottom: 0 }} placeholder="Wpisz nowy adres..." value={newIp} onChange={(e) => setNewIp(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addIp()} />
                <button className="btn-primary" style={{ width: "100px" }} onClick={addIp}>Dodaj</button>
             </div>
 
-            <div className="ip-list">
+            <div className="scroll-list">
                {ips.map((ip, idx) => (
-                 <div key={idx} className="ip-item">
-                    <span>{ip}</span>
-                    <div className="remove-btn" onClick={() => removeIp(idx)}>
-                       <TrashIcon />
-                    </div>
+                 <div key={idx} className="list-item">
+                    <span style={{ color: "#38bdf8", fontFamily: "monospace" }}>{ip}</span>
+                    <div className="remove-btn" onClick={() => removeIp(idx)}><TrashIcon /></div>
                  </div>
                ))}
-               {ips.length === 0 && (
-                 <div style={{ textAlign: "center", padding: "2rem", color: "#475569", fontSize: "0.9rem" }}>Brak adresów na liście</div>
-               )}
             </div>
 
             <div style={{ display: "flex", gap: "1rem" }}>
-              <button className="btn-primary" onClick={saveIps} disabled={savingIps}>
-                {savingIps ? "Zapisywanie..." : "Zapisz Zmiany"}
-              </button>
-              <button className="btn-outline" style={{ marginTop: 0 }} onClick={() => setShowIpEditor(false)}>
-                Anuluj
-              </button>
+              <button className="btn-primary" onClick={saveIps} disabled={savingIps}>{savingIps ? "Zapisywanie..." : "Zapisz Zmiany"}</button>
+              <button className="btn-outline" style={{ marginTop: 0 }} onClick={() => setShowIpEditor(false)}>Anuluj</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showUserManager && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "600px" }}>
+            <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem", fontWeight: "800" }}>Zarządzanie Kontami</h2>
+            <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.8rem" }}>Dodawaj nowych operatorów i monitoruj ich ostatnią aktywność.</p>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "0.5rem", marginBottom: "1.5rem" }}>
+               <input className="input" style={{ marginBottom: 0 }} placeholder="Login" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
+               <input className="input" style={{ marginBottom: 0 }} type="password" placeholder="Hasło" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} />
+               <button className="btn-primary" style={{ width: "80px" }} onClick={addUser} disabled={creatingUser}>Dodaj</button>
+            </div>
+
+            <div className="scroll-list">
+               <div className="list-item" style={{ background: "rgba(168, 85, 247, 0.1)", borderBottom: "1px solid rgba(168, 85, 247, 0.2)" }}>
+                  <span style={{ color: "#a855f7" }}>admin (Superadmin)</span>
+                  <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Zawsze Online</span>
+               </div>
+               {users.map((u, idx) => (
+                 <div key={idx} className="list-item">
+                    <div>
+                      <div style={{ color: "#f8fafc" }}>{u.username}</div>
+                      <div style={{ fontSize: "0.7rem", color: "#64748b" }}>Hasło: {u.password}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: "0.7rem", color: "#64748b" }}>OSTATNIA AKTYWNOŚĆ</div>
+                        <div style={{ fontSize: "0.85rem", color: (Date.now() - u.lastActive < 60000) ? "#22c55e" : "#94a3b8" }}>
+                          {Date.now() - u.lastActive < 60000 ? "● Teraz" : new Date(u.lastActive).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="remove-btn" onClick={() => removeUser(u.username)}><TrashIcon /></div>
+                    </div>
+                 </div>
+               ))}
+               {users.length === 0 && (
+                 <div style={{ textAlign: "center", padding: "2rem", color: "#475569", fontSize: "0.9rem" }}>Brak dodatkowych użytkowników</div>
+               )}
+            </div>
+
+            <button className="btn-outline" style={{ marginTop: 0 }} onClick={() => setShowUserManager(false)}>Zamknij</button>
           </div>
         </div>
       )}

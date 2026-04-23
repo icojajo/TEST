@@ -2,6 +2,7 @@
 import { useState } from "react";
 
 export default function LoginPage() {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -12,14 +13,14 @@ export default function LoginPage() {
     const res = await fetch("/api/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password })
+      body: JSON.stringify({ username, password })
     });
 
     if (res.ok) {
       window.location.href = "/";
     } else {
       const data = await res.json();
-      setError(data.error || "Nieprawidłowe hasło.");
+      setError(data.error || "Nieprawidłowe dane logowania.");
     }
   };
 
@@ -38,6 +39,21 @@ export default function LoginPage() {
         <p style={{ color: "#94a3b8", marginBottom: "2rem", fontSize: "0.9rem" }}>Dostęp do panelu dowodzenia jest strzeżony.</p>
         
         <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <input 
+              type="text" 
+              placeholder="Nazwa użytkownika" 
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={{
+                width: "100%", padding: "1rem", borderRadius: "8px", boxSizing: "border-box",
+                background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.1)",
+                color: "white", fontSize: "1rem", outline: "none", transition: "border 0.2s"
+              }}
+              onFocus={(e) => e.currentTarget.style.border = "1px solid #3b82f6"}
+              onBlur={(e) => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)"}
+            />
+          </div>
           <div>
             <input 
               type="password" 
