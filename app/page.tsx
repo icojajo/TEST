@@ -155,6 +155,8 @@ export default function AdminPage() {
           setUsers(data.users || []);
         });
     }
+  }, [showUserManager]);
+
   // Fetch All IPs
   useEffect(() => {
     if (showAllIps) {
