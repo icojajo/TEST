@@ -18,6 +18,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonResponse = await handleUpload({
       body,
       request,
+      token: "vercel_blob_rw_pModHGerawc2KpVL_AVzIm745OAsCpgOypW2ve03PdmtBjL",
       onBeforeGenerateToken: async (pathname) => {
         if (!isAdmin()) {
           throw new Error('Tylko administrator może przesyłać pliki');

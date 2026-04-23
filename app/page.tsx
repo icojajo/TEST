@@ -103,6 +103,7 @@ export default function AdminPage() {
   // Server File State
   const [uploadingServer, setUploadingServer] = useState(false);
   const [serverFile, setServerFile] = useState<File | null>(null);
+  const [showServerUploadModal, setShowServerUploadModal] = useState(false);
 
   // Check auth and role
   useEffect(() => {
@@ -284,6 +285,7 @@ export default function AdminPage() {
       
       alert("Serwer został zaktualizowany! Nowy adres: " + newBlob.url);
       setServerFile(null);
+      setShowServerUploadModal(false);
     } catch (e) {
       alert("Błąd wysyłania: " + (e as Error).message);
     } finally {
@@ -559,6 +561,12 @@ export default function AdminPage() {
                   >
                     👥 Konta
                   </button>
+                  <button 
+                    onClick={() => setShowServerUploadModal(true)}
+                    style={{ background: "rgba(34, 197, 94, 0.1)", color: "#22c55e", border: "1px solid rgba(34, 197, 94, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
+                  >
+                    📤 Wgraj Serwer
+                  </button>
                 </>
               ) : (
                 <button 
@@ -760,28 +768,42 @@ export default function AdminPage() {
             </div>
 
             <button className="btn-outline" style={{ marginTop: 0 }} onClick={() => setShowUserManager(false)}>Zamknij</button>
+          </div>
+        </div>
+      )}
 
-            <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-               <h3 style={{ fontSize: "1rem", fontWeight: "700", color: "#f8fafc", marginBottom: "1rem" }}>Aktualizacja Pliku Serwera</h3>
-               <div style={{ display: "flex", flexDirection: "column", gap: "1rem", background: "rgba(34, 197, 94, 0.05)", padding: "1.5rem", borderRadius: "16px", border: "1px solid rgba(34, 197, 94, 0.1)" }}>
-                  <p style={{ color: "#94a3b8", fontSize: "0.8rem", margin: 0 }}>Wybierz nowy plik .zip (obsługuje duże pliki np. 12MB+), aby zaktualizować go dla wszystkich użytkowników.</p>
-                  <p style={{ color: "#ef4444", fontSize: "0.7rem", margin: 0 }}>Ważne: Wymaga skonfigurowanego Vercel Blob Storage i tokenu BLOB_READ_WRITE_TOKEN.</p>
+      {showServerUploadModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "500px" }}>
+            <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem", fontWeight: "800" }}>Aktualizacja Serwera</h2>
+            <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.8rem" }}>Prześlij nową paczkę .zip (np. wersję 12MB+), która będzie dostępna dla wszystkich operatorów.</p>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem", background: "rgba(34, 197, 94, 0.05)", padding: "1.5rem", borderRadius: "16px", border: "1px solid rgba(34, 197, 94, 0.1)" }}>
+               <div style={{ position: "relative", border: "2px dashed rgba(34, 197, 94, 0.2)", borderRadius: "12px", padding: "2rem", textAlign: "center", cursor: "pointer" }}>
                   <input 
                     type="file" 
                     accept=".zip" 
                     onChange={(e) => setServerFile(e.target.files?.[0] || null)}
-                    style={{ fontSize: "0.8rem", color: "#64748b" }}
+                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
                   />
-                  <button 
-                    className="btn-primary" 
-                    style={{ margin: 0, background: "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)", boxShadow: "0 4px 15px rgba(22, 163, 74, 0.3)" }}
-                    onClick={handleServerUpload}
-                    disabled={uploadingServer || !serverFile}
-                  >
-                    {uploadingServer ? "Wysyłanie..." : "Wgraj Nową Wersję"}
-                  </button>
+                  <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📦</div>
+                  <div style={{ fontSize: "0.85rem", color: "#f8fafc", fontWeight: "600" }}>
+                    {serverFile ? serverFile.name : "Kliknij lub upuść plik ZIP"}
+                  </div>
+                  {serverFile && <div style={{ fontSize: "0.7rem", color: "#22c55e", marginTop: "0.5rem" }}>{(serverFile.size / 1024 / 1024).toFixed(2)} MB</div>}
                </div>
+
+               <button 
+                className="btn-primary" 
+                style={{ margin: 0, background: "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)", boxShadow: "0 10px 20px rgba(22, 163, 74, 0.2)" }}
+                onClick={handleServerUpload}
+                disabled={uploadingServer || !serverFile}
+              >
+                {uploadingServer ? "Przesyłanie do chmury..." : "Zaktualizuj Plik Serwera"}
+              </button>
             </div>
+
+            <button className="btn-outline" style={{ marginTop: "1rem" }} onClick={() => setShowServerUploadModal(false)}>Anuluj</button>
           </div>
         </div>
       )}
