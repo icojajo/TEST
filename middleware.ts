@@ -4,6 +4,10 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // Logowanie dla debugowania (widoczne w konsoli serwera)
+  const authCookie = request.cookies.get('admin_auth')?.value;
+  console.log(`[MIDDLEWARE] Path: ${pathname}, Auth: ${authCookie ? "TAK" : "BRAK"}`);
+
   // Zostawiamy otwarte otwarte trasy API przeznaczone dla naszych klientów C++/C#
   if (
     pathname.startsWith('/api/') || 
@@ -17,11 +21,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Odczytaj ciastko sesyjne
-  const authCookie = request.cookies.get('admin_auth')?.value;
-  
   // Zablokuj nieautoryzowany dostęp i przekieruj na bezpieczny ekran logowania
-  if (authCookie !== 'secure_authenticated_session') {
+  if (!authCookie) {
+    console.log(`[MIDDLEWARE] Redirect to /login from ${pathname}`);
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
