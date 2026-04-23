@@ -689,10 +689,13 @@ export default function AdminPage() {
             <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem", fontWeight: "800" }}>Zarządzanie Kontami</h2>
             <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.8rem" }}>Dodawaj nowych operatorów i monitoruj ich ostatnią aktywność.</p>
             
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "0.5rem", marginBottom: "1.5rem" }}>
-               <input className="input" style={{ marginBottom: 0 }} placeholder="Login" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
-               <input className="input" style={{ marginBottom: 0 }} type="password" placeholder="Hasło" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} />
-               <button className="btn-primary" style={{ width: "80px" }} onClick={addUser} disabled={creatingUser}>Dodaj</button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem", background: "rgba(255,255,255,0.02)", padding: "1.5rem", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+               <div style={{ fontSize: "0.85rem", fontWeight: "700", color: "#94a3b8", marginBottom: "-0.5rem" }}>DODAJ NOWEGO OPERATORA</div>
+               <div style={{ display: "flex", gap: "0.8rem" }}>
+                 <input className="input" style={{ marginBottom: 0, flex: 1 }} placeholder="Login" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
+                 <input className="input" style={{ marginBottom: 0, flex: 1 }} type="password" placeholder="Hasło" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} />
+               </div>
+               <button className="btn-primary" style={{ margin: 0 }} onClick={addUser} disabled={creatingUser}>Dodaj konto operatora</button>
             </div>
 
             <div className="scroll-list">
