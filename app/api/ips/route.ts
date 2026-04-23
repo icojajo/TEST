@@ -3,25 +3,25 @@ import { getKvClient } from '../../../lib/kv';
 import { get } from '@vercel/edge-config';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET() {
   try {
     const kv = getKvClient();
-    
-    // 1. Edge Config
-    try {
-      const edgeIpList = await get<string>('ip_list');
-      if (edgeIpList) return NextResponse.json({ ips: edgeIpList });
-    } catch (e) {}
-
-    // 2. Vercel KV
     let content: string | null = null;
+
+    // 1. Priorytet dla KV (Zapisywane przez stronę)
     if (kv) {
       try {
         content = await kv.get('ip_list');
-      } catch (e) {
-        console.error("[IPS_API] KV Get Error:", e);
-      }
+      } catch (e) {}
+    }
+
+    // 2. Fallback dla Edge Config
+    if (!content) {
+      try {
+        content = await get<string>('ip_list') || null;
+      } catch (e) {}
     }
 
     return NextResponse.json({ ips: content || "" });
@@ -41,7 +41,6 @@ export async function POST(req: Request) {
       await kv.set('ip_list', ips);
       return NextResponse.json({ success: true });
     } catch (e) {
-      console.error("[IPS_API] KV Set Error:", e);
       return NextResponse.json({ error: "Błąd bazy danych" }, { status: 500 });
     }
   } catch (error) {
