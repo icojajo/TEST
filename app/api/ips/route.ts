@@ -1,18 +1,20 @@
 import { NextResponse } from 'next/server';
-import { kv } from '@/lib/kv'; // Używamy naszego klienta z hardcoded kluczami
+import { getKvClient } from '@/lib/kv';
 import { get } from '@vercel/edge-config';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const kv = getKvClient();
+    
     // 1. Edge Config
     try {
       const edgeIpList = await get<string>('ip_list');
       if (edgeIpList) return NextResponse.json({ ips: edgeIpList });
     } catch (e) {}
 
-    // 2. Vercel KV (Przez nasz lib/kv.ts)
+    // 2. Vercel KV
     let content: string | null = null;
     try {
       content = await kv.get('ip_list');
@@ -29,6 +31,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const { ips } = await req.json();
+    const kv = getKvClient();
 
     try {
       console.log("[IPS] Saving to KV:", ips);

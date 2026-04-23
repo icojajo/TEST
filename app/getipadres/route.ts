@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
-import { kv } from '@/lib/kv'; // Używamy naszego klienta z hardcoded kluczami
+import { getKvClient } from '@/lib/kv';
 import { get } from '@vercel/edge-config';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const kv = getKvClient();
+    
     // 1. Edge Config
     try {
       const edgeIpList = await get<string>('ip_list');
