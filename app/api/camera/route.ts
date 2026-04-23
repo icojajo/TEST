@@ -7,6 +7,7 @@ export async function POST(req: Request) {
     const client = clients.get(id);
     if (client) {
       client.cameraData = camera;
+      client.cameraUpdatedAt = Date.now();
       client.lastSeen = Date.now();
       return NextResponse.json({ success: true });
     }
