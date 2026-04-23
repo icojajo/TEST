@@ -92,12 +92,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-          <p style={{ color: "#64748b", fontSize: "0.75rem", margin: 0 }}>
-            Konto systemowe (hardcoded):<br/>
-            <span style={{ color: "#3b82f6" }}>admin</span> / <span style={{ color: "#3b82f6" }}>superadmin</span>
-          </p>
-        </div>
       </div>
     </div>
   );
