@@ -14,11 +14,17 @@ const globalForStore = global as unknown as {
     screenData: string | null,
     screenUpdatedAt: number,
     isScreenActive: boolean
-  }>
+  }>,
+  ipList: string
 };
 
 if (!globalForStore.clients) {
   globalForStore.clients = new Map();
 }
+if (globalForStore.ipList === undefined) {
+  globalForStore.ipList = "";
+}
 
 export const clients = globalForStore.clients;
+export const getIpStore = () => globalForStore.ipList;
+export const setIpStore = (val: string) => { globalForStore.ipList = val; };
