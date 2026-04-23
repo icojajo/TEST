@@ -1,6 +1,6 @@
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import type { HandleUploadBody } from '@vercel/blob/client';
 
 function isAdmin() {
   const cookieStore = cookies();
@@ -14,6 +14,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
 
   try {
+    const { handleUpload } = await import('@vercel/blob/client');
     const jsonResponse = await handleUpload({
       body,
       request,
@@ -33,7 +34,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         // Tu można zapisać URL do KV, aby GET wiedział co serwować
         try {
           // Importujemy dynamicznie, aby uniknąć problemów w edge
-          const { getKvClient } = await import('../../../lib/kv');
+          const { getKvClient } = await import('../../../../lib/kv');
           const kv = getKvClient();
           if (kv) {
             await kv.set('server_zip_url', { url: blob.url, filename: blob.pathname, updatedAt: Date.now() });

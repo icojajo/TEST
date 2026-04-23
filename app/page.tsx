@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { upload } from '@vercel/blob/client';
 
 // --- Icons ---
 const MonitorIcon = () => (
@@ -277,6 +276,7 @@ export default function AdminPage() {
     if (!serverFile) return;
     setUploadingServer(true);
     try {
+      const { upload } = await import('@vercel/blob/client');
       const newBlob = await upload(serverFile.name, serverFile, {
         access: 'public',
         handleUploadUrl: '/api/server-zip/upload',
