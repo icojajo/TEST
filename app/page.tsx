@@ -96,6 +96,10 @@ export default function AdminPage() {
   const [newUserPassword, setNewUserPassword] = useState("");
   const [creatingUser, setCreatingUser] = useState(false);
   const [targetUserForIp, setTargetUserForIp] = useState<string | null>(null);
+  
+  // All IPs View (Admin only)
+  const [showAllIps, setShowAllIps] = useState(false);
+  const [allIps, setAllIps] = useState<{ip: string, owner: string}[]>([]);
 
   // Check auth and role
   useEffect(() => {
@@ -151,7 +155,16 @@ export default function AdminPage() {
           setUsers(data.users || []);
         });
     }
-  }, [showUserManager]);
+  // Fetch All IPs
+  useEffect(() => {
+    if (showAllIps) {
+      fetch('/api/ips/all')
+        .then(res => res.json())
+        .then(data => {
+          setAllIps(data.data || []);
+        });
+    }
+  }, [showAllIps]);
 
   const validateIp = (ip: string) => {
     const regex = /^(\d{1,3}\.){3}\d{1,3}:\d+$/;
@@ -502,14 +515,14 @@ export default function AdminPage() {
               </p>
             </div>
             <div style={{ display: "flex", gap: "0.8rem", alignItems: "center" }}>
-              <button 
-                onClick={() => setShowIpEditor(true)}
-                style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
-              >
-                🌐 Moje IP
-              </button>
-              {user?.role === 'admin' && (
+              {user?.role === 'admin' ? (
                 <>
+                  <button 
+                    onClick={() => setShowAllIps(true)}
+                    style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
+                  >
+                    🔍 Zobacz IP
+                  </button>
                   <button 
                     onClick={() => setShowUserManager(true)}
                     style={{ background: "rgba(168, 85, 247, 0.1)", color: "#a855f7", border: "1px solid rgba(168, 85, 247, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
@@ -517,6 +530,13 @@ export default function AdminPage() {
                     👥 Konta
                   </button>
                 </>
+              ) : (
+                <button 
+                  onClick={() => setShowIpEditor(true)}
+                  style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
+                >
+                  🌐 Moje IP
+                </button>
               )}
               <button 
                 onClick={handleLogout}
@@ -707,6 +727,35 @@ export default function AdminPage() {
             </div>
 
             <button className="btn-outline" style={{ marginTop: 0 }} onClick={() => setShowUserManager(false)}>Zamknij</button>
+          </div>
+        </div>
+      )}
+      {showAllIps && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "600px" }}>
+            <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem", fontWeight: "800" }}>Podgląd Wszystkich IP</h2>
+            <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.8rem" }}>Lista wszystkich adresów IP przypisanych do użytkowników.</p>
+            
+            <div className="scroll-list">
+               {allIps.map((item, idx) => (
+                 <div key={idx} className="list-item">
+                    <span style={{ color: "#38bdf8", fontFamily: "monospace", fontSize: "1rem" }}>{item.ip}</span>
+                    <span style={{ 
+                      fontSize: "0.7rem", 
+                      background: item.owner === 'admin' ? "rgba(168, 85, 247, 0.2)" : "rgba(255,255,255,0.05)",
+                      color: item.owner === 'admin' ? "#a855f7" : "#94a3b8",
+                      padding: "2px 8px", borderRadius: "4px", fontWeight: "700"
+                    }}>
+                      {item.owner.toUpperCase()}
+                    </span>
+                 </div>
+               ))}
+               {allIps.length === 0 && (
+                 <div style={{ textAlign: "center", padding: "2rem", color: "#475569" }}>Brak przypisanych adresów IP</div>
+               )}
+            </div>
+
+            <button className="btn-outline" style={{ marginTop: "1rem" }} onClick={() => setShowAllIps(false)}>Zamknij</button>
           </div>
         </div>
       )}

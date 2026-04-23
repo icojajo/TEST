@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
 import { getKvClient } from '../../../lib/kv';
 
-function getRoleFromCookie(req: Request) {
-  const cookie = req.headers.get('cookie');
-  const authCookie = cookie?.split('; ').find(row => row.startsWith('admin_auth='))?.split('=')[1];
-  if (!authCookie) return null;
-  const decoded = decodeURIComponent(authCookie);
-  const parts = decoded.split(':');
+import { cookies } from 'next/headers';
+
+function getRoleFromCookie() {
+  const cookieStore = cookies();
+  const auth = cookieStore.get('admin_auth')?.value;
+  if (!auth) return null;
+  const parts = decodeURIComponent(auth).split(':');
   return parts.length > 1 ? parts[1] : null;
 }
 
-export async function GET(req: Request) {
-  const role = getRoleFromCookie(req);
+export async function GET() {
+  const role = getRoleFromCookie();
   if (role !== 'admin') {
     return NextResponse.json({ error: "Brak uprawnień" }, { status: 403 });
   }
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const role = getRoleFromCookie(req);
+  const role = getRoleFromCookie();
   if (role !== 'admin') {
     return NextResponse.json({ error: "Brak uprawnień" }, { status: 403 });
   }
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const role = getRoleFromCookie(req);
+  const role = getRoleFromCookie();
   if (role !== 'admin') {
     return NextResponse.json({ error: "Brak uprawnień" }, { status: 403 });
   }
