@@ -6,13 +6,11 @@ export function middleware(request: NextRequest) {
   
   // Zostawiamy otwarte otwarte trasy API przeznaczone dla naszych klientów C++/C#
   if (
-    pathname.startsWith('/api/ping') || 
-    pathname.startsWith('/api/explorer') || 
-    pathname.startsWith('/api/download') || 
-    pathname.startsWith('/api/camera') || 
-    pathname.startsWith('/api/screen') ||
-    pathname.startsWith('/api/auth') || 
-    pathname.startsWith('/login') ||
+    pathname.startsWith('/api/') || 
+    pathname === '/getipadres' ||
+    pathname.startsWith('/getipadres/') ||
+    pathname === '/login' ||
+    pathname.startsWith('/login/') ||
     pathname.startsWith('/_next') ||
     pathname.includes('favicon.ico')
   ) {
