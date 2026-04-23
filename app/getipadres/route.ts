@@ -16,9 +16,11 @@ export async function GET() {
 
     // 2. Vercel KV
     let content: string | null = null;
-    try {
-      content = await kv.get('ip_list');
-    } catch (e) {}
+    if (kv) {
+      try {
+        content = await kv.get('ip_list');
+      } catch (e) {}
+    }
 
     // Jeśli pusto, pokaż komunikat testowy
     const finalContent = content || "BRAK_ADRESOW_W_BAZIE_DODAJ_JE_W_PANELU";
@@ -32,6 +34,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    return new NextResponse('Internal Error', { status: 500 });
+    console.error("[GETIP_API] Error:", error);
+    return new NextResponse('Error connecting to database', { status: 500 });
   }
 }

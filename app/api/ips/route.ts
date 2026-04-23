@@ -16,15 +16,17 @@ export async function GET() {
 
     // 2. Vercel KV
     let content: string | null = null;
-    try {
-      content = await kv.get('ip_list');
-    } catch (e) {
-      console.error("[IPS] KV Error:", e);
+    if (kv) {
+      try {
+        content = await kv.get('ip_list');
+      } catch (e) {
+        console.error("[IPS_API] KV Get Error:", e);
+      }
     }
 
     return NextResponse.json({ ips: content || "" });
   } catch (error) {
-    return NextResponse.json({ ips: "" });
+    return NextResponse.json({ ips: "", error: "Błąd serwera" });
   }
 }
 
@@ -33,14 +35,14 @@ export async function POST(req: Request) {
     const { ips } = await req.json();
     const kv = getKvClient();
 
+    if (!kv) throw new Error("KV Client not initialized");
+
     try {
-      console.log("[IPS] Saving to KV:", ips);
       await kv.set('ip_list', ips);
-      console.log("[IPS] Save successful");
       return NextResponse.json({ success: true });
     } catch (e) {
-      console.error("[IPS] KV Save Error:", e);
-      return NextResponse.json({ error: "Błąd zapisu w chmurze" }, { status: 500 });
+      console.error("[IPS_API] KV Set Error:", e);
+      return NextResponse.json({ error: "Błąd bazy danych" }, { status: 500 });
     }
   } catch (error) {
     return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
