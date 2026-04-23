@@ -16,6 +16,12 @@ const BackIcon = () => (
   </svg>
 );
 
+const TrashIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/>
+  </svg>
+);
+
 // --- Components ---
 const LiveStream = ({ clientId, type }: { clientId: string, type: 'screen' | 'camera' }) => {
   const [data, setData] = useState<string | null>(null);
@@ -78,7 +84,8 @@ export default function AdminPage() {
   
   // IP Editor State
   const [showIpEditor, setShowIpEditor] = useState(false);
-  const [ipsContent, setIpsContent] = useState("");
+  const [ips, setIps] = useState<string[]>([]);
+  const [newIp, setNewIp] = useState("");
   const [savingIps, setSavingIps] = useState(false);
 
   // Poll all clients for the dashboard grid
@@ -101,17 +108,41 @@ export default function AdminPage() {
     if (showIpEditor) {
       fetch('/api/ips')
         .then(res => res.json())
-        .then(data => setIpsContent(data.ips || ""));
+        .then(data => {
+          const list = data.ips ? data.ips.split('\n').filter((x: string) => x.trim() !== "") : [];
+          setIps(list);
+        });
     }
   }, [showIpEditor]);
+
+  const validateIp = (ip: string) => {
+    const regex = /^(\d{1,3}\.){3}\d{1,3}:\d+$/;
+    if (!regex.test(ip)) return false;
+    const parts = ip.split(':')[0].split('.');
+    return parts.every(p => parseInt(p) <= 255);
+  };
+
+  const addIp = () => {
+    if (!validateIp(newIp)) {
+      alert("Błędny format IP! Użyj: xxx.xxx.xxx.xxx:port (max 3 cyfry na sekcję)");
+      return;
+    }
+    setIps([...ips, newIp]);
+    setNewIp("");
+  };
+
+  const removeIp = (index: number) => {
+    setIps(ips.filter((_, i) => i !== index));
+  };
 
   const saveIps = async () => {
     setSavingIps(true);
     try {
+      const content = ips.join('\n');
       await fetch('/api/ips', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ips: ipsContent })
+        body: JSON.stringify({ ips: content })
       });
       setShowIpEditor(false);
     } catch (e) {
@@ -357,15 +388,27 @@ export default function AdminPage() {
         }
         .ip-editor-content {
           background: #1e293b; border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 24px; width: 100%; max-width: 600px; padding: 2rem;
+          border-radius: 24px; width: 100%; max-width: 500px; padding: 2rem;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          display: flex; flex-direction: column; max-height: 90vh;
         }
-        .textarea {
-          width: 100%; height: 300px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px; color: #38bdf8; padding: 1rem; font-family: monospace;
-          font-size: 1rem; outline: none; margin-bottom: 1.5rem; resize: none;
+        .ip-list {
+          flex: 1; overflow-y: auto; margin-bottom: 1.5rem;
+          background: #0f172a; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+          padding: 0.5rem;
         }
-        .textarea:focus { border-color: #38bdf8; }
+        .ip-item {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 0.8rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);
+          color: #38bdf8; font-family: monospace; font-weight: 600;
+        }
+        .ip-item:last-child { border-bottom: none; }
+        .remove-btn {
+          color: #ef4444; cursor: pointer; padding: 5px; border-radius: 6px;
+          transition: 0.2s;
+        }
+        .remove-btn:hover { background: rgba(239, 68, 68, 0.1); }
+        .add-form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
       `}</style>
 
       {!selectedClientId ? (
@@ -442,7 +485,7 @@ export default function AdminPage() {
               <div style={{ marginTop: "2rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
                 <div className="card">
                   <div className="card-title">Kamera Systemowa</div>
-                  <div style={{ height: "200px", background: "#020617", borderRadius: "12px", overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ height: "200px", background: "#020617", borderRadius: "12px", overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifySelf: "center" }}>
                      {selectedClient?.isCameraActive ? (
                        <LiveStream clientId={selectedClientId} type="camera" />
                      ) : (
@@ -503,16 +546,37 @@ export default function AdminPage() {
       {showIpEditor && (
         <div className="ip-editor-overlay">
           <div className="ip-editor-content">
-            <h2 style={{ marginBottom: "1rem", fontSize: "1.5rem", fontWeight: "800" }}>Lista Adresów IP</h2>
-            <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-              Wpisz adresy IP (jeden pod drugim), które mają być dostępne pod adresem /getipadres.
+            <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem", fontWeight: "800" }}>Manager Adresów IP</h2>
+            <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.8rem" }}>
+               Format: <code style={{ color: "#38bdf8" }}>xxx.xxx.xxx.xxx:port</code> (np. 127.0.0.1:8080)
             </p>
-            <textarea 
-              className="textarea" 
-              value={ipsContent}
-              onChange={(e) => setIpsContent(e.target.value)}
-              placeholder="1.2.3.4&#10;5.6.7.8"
-            />
+            
+            <div className="add-form">
+               <input 
+                 className="input" 
+                 style={{ marginBottom: 0 }} 
+                 placeholder="Wpisz nowy adres..." 
+                 value={newIp}
+                 onChange={(e) => setNewIp(e.target.value)}
+                 onKeyDown={(e) => e.key === 'Enter' && addIp()}
+               />
+               <button className="btn-primary" style={{ width: "100px" }} onClick={addIp}>Dodaj</button>
+            </div>
+
+            <div className="ip-list">
+               {ips.map((ip, idx) => (
+                 <div key={idx} className="ip-item">
+                    <span>{ip}</span>
+                    <div className="remove-btn" onClick={() => removeIp(idx)}>
+                       <TrashIcon />
+                    </div>
+                 </div>
+               ))}
+               {ips.length === 0 && (
+                 <div style={{ textAlign: "center", padding: "2rem", color: "#475569", fontSize: "0.9rem" }}>Brak adresów na liście</div>
+               )}
+            </div>
+
             <div style={{ display: "flex", gap: "1rem" }}>
               <button className="btn-primary" onClick={saveIps} disabled={savingIps}>
                 {savingIps ? "Zapisywanie..." : "Zapisz Zmiany"}
