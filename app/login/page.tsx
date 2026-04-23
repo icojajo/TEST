@@ -5,22 +5,32 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+    
     setError("");
+    setLoading(true);
 
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
 
-    if (res.ok) {
-      window.location.href = "/";
-    } else {
-      const data = await res.json();
-      setError(data.error || "Nieprawidłowe dane logowania.");
+      if (res.ok) {
+        window.location.href = "/";
+      } else {
+        const data = await res.json();
+        setError(data.error || "Nieprawidłowe dane logowania.");
+      }
+    } catch (err) {
+      setError("Błąd połączenia z serwerem.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,54 +48,56 @@ export default function LoginPage() {
         <h1 style={{ color: "#f8fafc", margin: "0 0 0.5rem 0", fontSize: "2rem", fontWeight: "800" }}>Wymagana Autoryzacja</h1>
         <p style={{ color: "#94a3b8", marginBottom: "2rem", fontSize: "0.9rem" }}>Dostęp do panelu dowodzenia jest strzeżony.</p>
         
-        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <div>
+        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <input 
               type="text" 
               placeholder="Nazwa użytkownika" 
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
               style={{
                 width: "100%", padding: "1rem", borderRadius: "8px", boxSizing: "border-box",
                 background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.1)",
                 color: "white", fontSize: "1rem", outline: "none", transition: "border 0.2s"
               }}
-              onFocus={(e) => e.currentTarget.style.border = "1px solid #3b82f6"}
-              onBlur={(e) => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)"}
             />
-          </div>
-          <div>
             <input 
               type="password" 
-              placeholder="Wprowadź tajne hasło" 
+              placeholder="Hasło" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
               style={{
                 width: "100%", padding: "1rem", borderRadius: "8px", boxSizing: "border-box",
                 background: "rgba(0, 0, 0, 0.3)", border: "1px solid rgba(255, 255, 255, 0.1)",
                 color: "white", fontSize: "1rem", outline: "none", transition: "border 0.2s"
               }}
-              onFocus={(e) => e.currentTarget.style.border = "1px solid #3b82f6"}
-              onBlur={(e) => e.currentTarget.style.border = "1px solid rgba(255,255,255,0.1)"}
             />
           </div>
+
           {error && <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: 0, fontWeight: "500" }}>{error}</p>}
+          
           <button 
             type="submit"
+            disabled={loading}
             style={{
-              padding: "1rem", borderRadius: "8px", border: "none", cursor: "pointer",
+              padding: "1rem", borderRadius: "8px", border: "none", cursor: loading ? "not-allowed" : "pointer",
               background: "linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)", color: "white",
               fontWeight: "bold", fontSize: "1rem", boxShadow: "0 4px 15px rgba(37, 99, 235, 0.4)",
-              transition: "transform 0.1s, opacity 0.2s", marginTop: "1rem"
+              transition: "transform 0.1s, opacity 0.2s", opacity: loading ? 0.7 : 1
             }}
-            onMouseOver={(e) => e.currentTarget.style.opacity = "0.9"}
-            onMouseOut={(e) => e.currentTarget.style.opacity = "1"}
-            onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.98)"}
-            onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
           >
-            Odblokuj dostęp
+            {loading ? "Autoryzacja..." : "Odblokuj dostęp"}
           </button>
         </form>
+
+        <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <p style={{ color: "#64748b", fontSize: "0.75rem", margin: 0 }}>
+            Konto systemowe (hardcoded):<br/>
+            <span style={{ color: "#3b82f6" }}>admin</span> / <span style={{ color: "#3b82f6" }}>superadmin</span>
+          </p>
+        </div>
       </div>
     </div>
   );
