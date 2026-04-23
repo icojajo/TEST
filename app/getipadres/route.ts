@@ -1,15 +1,22 @@
 import { NextResponse } from 'next/server';
+import { getIpStore } from '@/lib/store';
 import fs from 'fs';
 import path from 'path';
 
 export async function GET() {
   try {
-    const filePath = path.join(process.cwd(), 'dane', 'ips.txt');
-    if (!fs.existsSync(filePath)) {
-      return new NextResponse('', { status: 200 });
+    // Najpierw sprawdź pamięć (działa na Vercel)
+    let content = getIpStore();
+    
+    // Jeśli pamięć jest pusta, spróbuj odczytać z pliku (lokalnie)
+    if (!content) {
+      const filePath = path.join(process.cwd(), 'dane', 'ips.txt');
+      if (fs.existsSync(filePath)) {
+        content = fs.readFileSync(filePath, 'utf-8');
+      }
     }
-    const content = fs.readFileSync(filePath, 'utf-8');
-    return new NextResponse(content, {
+
+    return new NextResponse(content || "", {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Cache-Control': 'no-store, max-age=0'
