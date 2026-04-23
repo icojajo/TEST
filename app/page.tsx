@@ -548,7 +548,7 @@ export default function AdminPage() {
           <div className="ip-editor-content">
             <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem", fontWeight: "800" }}>Manager Adresów IP</h2>
             <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.8rem" }}>
-               Format: <code style={{ color: "#38bdf8" }}>xxx.xxx.xxx.xxx:port</code> (np. 127.0.0.1:8080)
+               Format: <code style={{ color: "#38bdf8" }}>xxx.xxx.xxx.xxx:port</code>. Zapisuje w pamięci RAM, pliku lokalnym oraz w chmurze Vercel KV.
             </p>
             
             <div className="add-form">
