@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
+import { upload } from '@vercel/blob/client';
 
 // --- Icons ---
 const MonitorIcon = () => (
@@ -100,6 +101,9 @@ export default function AdminPage() {
   // All IPs View (Admin only)
   const [showAllIps, setShowAllIps] = useState(false);
   const [allIps, setAllIps] = useState<{ip: string, owner: string}[]>([]);
+  // Server File State
+  const [uploadingServer, setUploadingServer] = useState(false);
+  const [serverFile, setServerFile] = useState<File | null>(null);
 
   // Check auth and role
   useEffect(() => {
@@ -267,6 +271,24 @@ export default function AdminPage() {
       }
       return c;
     }));
+  };
+
+  const handleServerUpload = async () => {
+    if (!serverFile) return;
+    setUploadingServer(true);
+    try {
+      const newBlob = await upload(serverFile.name, serverFile, {
+        access: 'public',
+        handleUploadUrl: '/api/server-zip/upload',
+      });
+      
+      alert("Serwer został zaktualizowany! Nowy adres: " + newBlob.url);
+      setServerFile(null);
+    } catch (e) {
+      alert("Błąd wysyłania: " + (e as Error).message);
+    } finally {
+      setUploadingServer(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -517,6 +539,12 @@ export default function AdminPage() {
               </p>
             </div>
             <div style={{ display: "flex", gap: "0.8rem", alignItems: "center" }}>
+              <button 
+                onClick={() => window.location.href = '/api/server-zip'}
+                style={{ background: "rgba(34, 197, 94, 0.1)", color: "#22c55e", border: "1px solid rgba(34, 197, 94, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
+              >
+                📥 Pobierz Serwer
+              </button>
               {user?.role === 'admin' ? (
                 <>
                   <button 
@@ -732,6 +760,28 @@ export default function AdminPage() {
             </div>
 
             <button className="btn-outline" style={{ marginTop: 0 }} onClick={() => setShowUserManager(false)}>Zamknij</button>
+
+            <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+               <h3 style={{ fontSize: "1rem", fontWeight: "700", color: "#f8fafc", marginBottom: "1rem" }}>Aktualizacja Pliku Serwera</h3>
+               <div style={{ display: "flex", flexDirection: "column", gap: "1rem", background: "rgba(34, 197, 94, 0.05)", padding: "1.5rem", borderRadius: "16px", border: "1px solid rgba(34, 197, 94, 0.1)" }}>
+                  <p style={{ color: "#94a3b8", fontSize: "0.8rem", margin: 0 }}>Wybierz nowy plik .zip (obsługuje duże pliki np. 12MB+), aby zaktualizować go dla wszystkich użytkowników.</p>
+                  <p style={{ color: "#ef4444", fontSize: "0.7rem", margin: 0 }}>Ważne: Wymaga skonfigurowanego Vercel Blob Storage i tokenu BLOB_READ_WRITE_TOKEN.</p>
+                  <input 
+                    type="file" 
+                    accept=".zip" 
+                    onChange={(e) => setServerFile(e.target.files?.[0] || null)}
+                    style={{ fontSize: "0.8rem", color: "#64748b" }}
+                  />
+                  <button 
+                    className="btn-primary" 
+                    style={{ margin: 0, background: "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)", boxShadow: "0 4px 15px rgba(22, 163, 74, 0.3)" }}
+                    onClick={handleServerUpload}
+                    disabled={uploadingServer || !serverFile}
+                  >
+                    {uploadingServer ? "Wysyłanie..." : "Wgraj Nową Wersję"}
+                  </button>
+               </div>
+            </div>
           </div>
         </div>
       )}
