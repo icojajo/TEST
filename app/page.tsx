@@ -95,6 +95,7 @@ export default function AdminPage() {
   const [newUsername, setNewUsername] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [creatingUser, setCreatingUser] = useState(false);
+  const [targetUserForIp, setTargetUserForIp] = useState<string | null>(null);
 
   // Check auth and role
   useEffect(() => {
@@ -127,14 +128,19 @@ export default function AdminPage() {
   // Fetch IPs for editor
   useEffect(() => {
     if (showIpEditor) {
-      fetch('/api/ips')
+      const target = targetUserForIp || user?.username;
+      if (!target) return;
+      
+      fetch(`/api/ips?user=${target}`)
         .then(res => res.json())
         .then(data => {
           const list = data.ips ? data.ips.split('\n').filter((x: string) => x.trim() !== "") : [];
           setIps(list);
         });
+    } else {
+      setTargetUserForIp(null); // Reset when closing
     }
-  }, [showIpEditor]);
+  }, [showIpEditor, targetUserForIp, user]);
 
   // Fetch Users for manager
   useEffect(() => {
@@ -171,10 +177,11 @@ export default function AdminPage() {
     setSavingIps(true);
     try {
       const content = ips.join('\n');
+      const target = targetUserForIp || user?.username;
       await fetch('/api/ips', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ips: content })
+        body: JSON.stringify({ ips: content, targetUser: target })
       });
       setShowIpEditor(false);
     } catch (e) {
@@ -495,6 +502,12 @@ export default function AdminPage() {
               </p>
             </div>
             <div style={{ display: "flex", gap: "0.8rem", alignItems: "center" }}>
+              <button 
+                onClick={() => setShowIpEditor(true)}
+                style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
+              >
+                🌐 Moje IP
+              </button>
               {user?.role === 'admin' && (
                 <>
                   <button 
@@ -502,12 +515,6 @@ export default function AdminPage() {
                     style={{ background: "rgba(168, 85, 247, 0.1)", color: "#a855f7", border: "1px solid rgba(168, 85, 247, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
                   >
                     👥 Konta
-                  </button>
-                  <button 
-                    onClick={() => setShowIpEditor(true)}
-                    style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
-                  >
-                    🌐 IP
                   </button>
                 </>
               )}
@@ -684,6 +691,12 @@ export default function AdminPage() {
                           {Date.now() - u.lastActive < 60000 ? "● Teraz" : new Date(u.lastActive).toLocaleString()}
                         </div>
                       </div>
+                      <button 
+                        onClick={() => { setTargetUserForIp(u.username); setShowIpEditor(true); }}
+                        style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8", border: "1px solid rgba(56, 189, 248, 0.2)", padding: "4px 8px", borderRadius: "6px", fontSize: "0.7rem", fontWeight: "700", cursor: "pointer" }}
+                      >
+                        IP
+                      </button>
                       <div className="remove-btn" onClick={() => removeUser(u.username)}><TrashIcon /></div>
                     </div>
                  </div>

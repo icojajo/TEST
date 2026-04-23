@@ -1,30 +1,31 @@
 import { NextResponse } from 'next/server';
 import { getKvClient } from '../../../lib/kv';
-import { get } from '@vercel/edge-config';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET() {
+function getUserInfo() {
+  const cookieStore = cookies();
+  const auth = cookieStore.get('admin_auth')?.value;
+  if (!auth) return null;
+  const [username, role] = decodeURIComponent(auth).split(':');
+  return { username, role };
+}
+
+export async function GET(req: Request) {
   try {
+    const user = getUserInfo();
+    if (!user) return NextResponse.json({ error: "Nieautoryzowany" }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const targetUser = user.role === 'admin' ? (searchParams.get('user') || user.username) : user.username;
+
     const kv = getKvClient();
-    let content: string | null = null;
+    if (!kv) return NextResponse.json({ ips: "" });
 
-    // 1. Priorytet dla KV (Zapisywane przez stronę)
-    if (kv) {
-      try {
-        content = await kv.get('ip_list');
-      } catch (e) {}
-    }
-
-    // 2. Fallback dla Edge Config
-    if (!content) {
-      try {
-        content = await get<string>('ip_list') || null;
-      } catch (e) {}
-    }
-
-    return NextResponse.json({ ips: content || "" });
+    const content = await kv.get(`ips:${targetUser}`) || "";
+    return NextResponse.json({ ips: content });
   } catch (error) {
     return NextResponse.json({ ips: "", error: "Błąd serwera" });
   }
@@ -32,17 +33,17 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { ips } = await req.json();
-    const kv = getKvClient();
+    const user = getUserInfo();
+    if (!user) return NextResponse.json({ error: "Nieautoryzowany" }, { status: 401 });
 
+    const { ips, targetUser: providedTarget } = await req.json();
+    const targetUser = user.role === 'admin' ? (providedTarget || user.username) : user.username;
+
+    const kv = getKvClient();
     if (!kv) throw new Error("KV Client not initialized");
 
-    try {
-      await kv.set('ip_list', ips);
-      return NextResponse.json({ success: true });
-    } catch (e) {
-      return NextResponse.json({ error: "Błąd bazy danych" }, { status: 500 });
-    }
+    await kv.set(`ips:${targetUser}`, ips);
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
