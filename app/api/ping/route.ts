@@ -31,7 +31,6 @@ export async function POST(req: Request) {
     client.ip = ip;
     client.messages = [];
 
-    // 🔥 Zapisujemy dane ekranu i kamery jeśli przyszły w pingu
     if (body.screen) client.screenData = body.screen;
     if (body.camera) client.cameraData = body.camera;
     
@@ -41,7 +40,11 @@ export async function POST(req: Request) {
       isCameraActive: client.isCameraActive,
       isScreenActive: client.isScreenActive
     }, {
-      headers: { 'Cache-Control': 'no-store, max-age=0' },
+      headers: { 
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     });
   } catch (err) {
     return NextResponse.json({ error: "Błędne zapytanie" }, { status: 400 });

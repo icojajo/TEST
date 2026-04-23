@@ -9,8 +9,10 @@ const globalForStore = global as unknown as {
     explorerData: any, 
     downloadData: any, 
     cameraData: string | null, 
+    cameraUpdatedAt: number,
     isCameraActive: boolean,
     screenData: string | null,
+    screenUpdatedAt: number,
     isScreenActive: boolean
   }>
 };

