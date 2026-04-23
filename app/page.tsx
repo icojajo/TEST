@@ -100,10 +100,6 @@ export default function AdminPage() {
   // All IPs View (Admin only)
   const [showAllIps, setShowAllIps] = useState(false);
   const [allIps, setAllIps] = useState<{ip: string, owner: string}[]>([]);
-  // Server File State
-  const [uploadingServer, setUploadingServer] = useState(false);
-  const [serverFile, setServerFile] = useState<File | null>(null);
-  const [showServerUploadModal, setShowServerUploadModal] = useState(false);
 
   // Check auth and role
   useEffect(() => {
@@ -271,26 +267,6 @@ export default function AdminPage() {
       }
       return c;
     }));
-  };
-
-  const handleServerUpload = async () => {
-    if (!serverFile) return;
-    setUploadingServer(true);
-    try {
-      const { upload } = await import('@vercel/blob/client');
-      const newBlob = await upload(serverFile.name, serverFile, {
-        access: 'public',
-        handleUploadUrl: '/api/server-zip/upload',
-      });
-      
-      alert("Serwer został zaktualizowany! Nowy adres: " + newBlob.url);
-      setServerFile(null);
-      setShowServerUploadModal(false);
-    } catch (e) {
-      alert("Błąd wysyłania: " + (e as Error).message);
-    } finally {
-      setUploadingServer(false);
-    }
   };
 
   const handleLogout = async () => {
@@ -541,12 +517,6 @@ export default function AdminPage() {
               </p>
             </div>
             <div style={{ display: "flex", gap: "0.8rem", alignItems: "center" }}>
-              <button 
-                onClick={() => window.location.href = '/api/server-zip'}
-                style={{ background: "rgba(34, 197, 94, 0.1)", color: "#22c55e", border: "1px solid rgba(34, 197, 94, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
-              >
-                📥 Pobierz Serwer
-              </button>
               {user?.role === 'admin' ? (
                 <>
                   <button 
@@ -560,12 +530,6 @@ export default function AdminPage() {
                     style={{ background: "rgba(168, 85, 247, 0.1)", color: "#a855f7", border: "1px solid rgba(168, 85, 247, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
                   >
                     👥 Konta
-                  </button>
-                  <button 
-                    onClick={() => setShowServerUploadModal(true)}
-                    style={{ background: "rgba(34, 197, 94, 0.1)", color: "#22c55e", border: "1px solid rgba(34, 197, 94, 0.2)", padding: "0.5rem 1rem", borderRadius: "100px", fontSize: "0.85rem", fontWeight: "600", cursor: "pointer" }}
-                  >
-                    📤 Wgraj Serwer
                   </button>
                 </>
               ) : (
@@ -768,42 +732,6 @@ export default function AdminPage() {
             </div>
 
             <button className="btn-outline" style={{ marginTop: 0 }} onClick={() => setShowUserManager(false)}>Zamknij</button>
-          </div>
-        </div>
-      )}
-
-      {showServerUploadModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "500px" }}>
-            <h2 style={{ marginBottom: "0.5rem", fontSize: "1.5rem", fontWeight: "800" }}>Aktualizacja Serwera</h2>
-            <p style={{ color: "#64748b", marginBottom: "1.5rem", fontSize: "0.8rem" }}>Prześlij nową paczkę .zip (np. wersję 12MB+), która będzie dostępna dla wszystkich operatorów.</p>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem", background: "rgba(34, 197, 94, 0.05)", padding: "1.5rem", borderRadius: "16px", border: "1px solid rgba(34, 197, 94, 0.1)" }}>
-               <div style={{ position: "relative", border: "2px dashed rgba(34, 197, 94, 0.2)", borderRadius: "12px", padding: "2rem", textAlign: "center", cursor: "pointer" }}>
-                  <input 
-                    type="file" 
-                    accept=".zip" 
-                    onChange={(e) => setServerFile(e.target.files?.[0] || null)}
-                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
-                  />
-                  <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📦</div>
-                  <div style={{ fontSize: "0.85rem", color: "#f8fafc", fontWeight: "600" }}>
-                    {serverFile ? serverFile.name : "Kliknij lub upuść plik ZIP"}
-                  </div>
-                  {serverFile && <div style={{ fontSize: "0.7rem", color: "#22c55e", marginTop: "0.5rem" }}>{(serverFile.size / 1024 / 1024).toFixed(2)} MB</div>}
-               </div>
-
-               <button 
-                className="btn-primary" 
-                style={{ margin: 0, background: "linear-gradient(90deg, #22c55e 0%, #16a34a 100%)", boxShadow: "0 10px 20px rgba(22, 163, 74, 0.2)" }}
-                onClick={handleServerUpload}
-                disabled={uploadingServer || !serverFile}
-              >
-                {uploadingServer ? "Przesyłanie do chmury..." : "Zaktualizuj Plik Serwera"}
-              </button>
-            </div>
-
-            <button className="btn-outline" style={{ marginTop: "1rem" }} onClick={() => setShowServerUploadModal(false)}>Anuluj</button>
           </div>
         </div>
       )}
