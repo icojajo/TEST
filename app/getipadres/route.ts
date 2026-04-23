@@ -1,30 +1,27 @@
 import { NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { kv } from '@/lib/kv'; // Używamy naszego klienta z hardcoded kluczami
 import { get } from '@vercel/edge-config';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // 1. Edge Config (Chmura)
+    // 1. Edge Config
     try {
       const edgeIpList = await get<string>('ip_list');
-      if (edgeIpList) {
-        console.log("[GETIP] Found in Edge Config");
-        return new NextResponse(edgeIpList, { headers: { 'Content-Type': 'text/plain' } });
-      }
+      if (edgeIpList) return new NextResponse(edgeIpList, { headers: { 'Content-Type': 'text/plain' } });
     } catch (e) {}
 
-    // 2. Vercel KV (Baza danych w chmurze)
+    // 2. Vercel KV
     let content: string | null = null;
     try {
       content = await kv.get('ip_list');
-      if (content) console.log("[GETIP] Found in KV");
-    } catch (e) {
-      console.error("[GETIP] KV Get Error:", e);
-    }
+    } catch (e) {}
 
-    return new NextResponse(content || "", {
+    // Jeśli pusto, pokaż komunikat testowy
+    const finalContent = content || "BRAK_ADRESOW_W_BAZIE_DODAJ_JE_W_PANELU";
+
+    return new NextResponse(finalContent, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
