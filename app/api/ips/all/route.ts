@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getKvClient } from '../../../lib/kv';
+import { getKvClient } from '../../../../lib/kv';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
